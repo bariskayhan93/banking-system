@@ -3,7 +3,7 @@ import {ConfigModule, ConfigService} from '@nestjs/config';
 import {TypeOrmModule} from '@nestjs/typeorm';
 import {PersonModule} from './modules/person/person.module';
 import {BankAccountModule} from './modules/bank-account/bank-account.module';
-import {TransactionModule} from './modules/transaction/transaction.module';
+import {BankTransactionModule} from './modules/bank-transaction/bank-transaction.module';
 import {TestModule} from './modules/test/test.module';
 import {typeOrmConfig} from "./typeorm.config";
 
@@ -16,7 +16,7 @@ import {typeOrmConfig} from "./typeorm.config";
         }),
         PersonModule,
         BankAccountModule,
-        TransactionModule,
+        BankTransactionModule,
         TestModule,
     ],
 })
