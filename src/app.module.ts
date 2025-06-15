@@ -6,6 +6,7 @@ import {BankAccountModule} from './modules/bank-account/bank-account.module';
 import {BankTransactionModule} from './modules/bank-transaction/bank-transaction.module';
 import {TestModule} from './modules/test/test.module';
 import {typeOrmConfig} from "./typeorm.config";
+import {BankProcessModule} from './modules/bank-process/bank-process.module';
 
 @Module({
     imports: [
@@ -17,6 +18,7 @@ import {typeOrmConfig} from "./typeorm.config";
         PersonModule,
         BankAccountModule,
         BankTransactionModule,
+        BankProcessModule,
         TestModule,
     ],
 })
