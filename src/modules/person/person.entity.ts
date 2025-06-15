@@ -1,4 +1,4 @@
-import { Entity, PrimaryGeneratedColumn, Column } from 'typeorm';
+import {Entity, PrimaryGeneratedColumn, Column} from 'typeorm';
 
 @Entity()
 export class Person {
@@ -11,9 +11,9 @@ export class Person {
     @Column()
     lastName: string;
 
-    @Column({ nullable: true })
+    @Column({nullable: true})
     email?: string;
 
-    @Column({ default: true })
+    @Column({default: true})
     isActive: boolean;
 }

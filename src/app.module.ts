@@ -5,24 +5,14 @@ import {PersonModule} from './modules/person/person.module';
 import {BankAccountModule} from './modules/bank-account/bank-account.module';
 import {TransactionModule} from './modules/transaction/transaction.module';
 import {TestModule} from './modules/test/test.module';
+import {typeOrmConfig} from "./typeorm.config";
 
 @Module({
     imports: [
         ConfigModule.forRoot({isGlobal: true}),
         TypeOrmModule.forRootAsync({
-            imports: [ConfigModule],
+            useFactory: typeOrmConfig,
             inject: [ConfigService],
-            useFactory: (config: ConfigService) => ({
-                type: 'postgres',
-                host: config.get('DB_HOST'),
-                port: +config.get<number>('DB_PORT')!,
-                username: config.get('DB_USERNAME'),
-                password: config.get('DB_PASSWORD'),
-                database: config.get('DB_DATABASE'),
-                autoLoadEntities: true,
-                synchronize: true,
-                logging: true,
-            }),
         }),
         PersonModule,
         BankAccountModule,
