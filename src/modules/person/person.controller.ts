@@ -7,11 +7,6 @@ import {UpdatePersonDto} from './dto/update-person.dto';
 export class PersonController {
     constructor(private readonly personService: PersonService) {}
 
-    @Get('seed')
-    async seedOne() {
-        return this.personService.createTest();
-    }
-
     @Get()
     findAll() {
         return this.personService.findAll();
@@ -20,6 +15,16 @@ export class PersonController {
     @Get(':id')
     findOne(@Param('id') id: string) {
         return this.personService.findOne(id);
+    }
+
+    @Get(':id/friends')
+    getFriends(@Param('id') id: string) {
+        return this.personService.getFriends(id);
+    }
+
+    @Post(':id1/friends/:id2')
+    makeFriends(@Param('id1') id1: string, @Param('id2') id2: string) {
+        return this.personService.makeFriends(id1, id2);
     }
 
     @Post()

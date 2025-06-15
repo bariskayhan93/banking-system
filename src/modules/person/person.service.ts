@@ -14,8 +14,47 @@ export class PersonService {
         private readonly gremlinService: GremlinService,
     ) {}
 
+    async create(createPersonDto:CreatePersonDto) {
+        const person: Person = this.personRepository.create(createPersonDto);
+        const savedPerson = await this.personRepository.save(person);
+        
+        await this.gremlinService.addPersonVertex(savedPerson.id, {
+            name: savedPerson.name,
+            email: savedPerson.email!
+        });
+        
+        return savedPerson;
+    }
+
+    async update(id: string, data: UpdatePersonDto) {
+        const person = await this.findOne(id);
+        const updatedPerson = Object.assign(person, data);
+        await this.personRepository.update(person.id, updatedPerson);
+        
+        await this.gremlinService.addPersonVertex(updatedPerson.id, {
+            name: updatedPerson.name,
+            email: updatedPerson.email!
+        });
+        
+        return updatedPerson;
+    }
+
+    async remove(id: string) {
+        const person = await this.findOne(id);
+        await this.gremlinService.removePersonVertex(person.id);
+        return this.personRepository.remove(person);
+    }
+
     async makeFriends(person1Id: string, person2Id: string) {
+        await this.gremlinService.getPersonVertex(person1Id);
+        await this.gremlinService.getPersonVertex(person2Id);
+
         await this.gremlinService.addFriendship(person1Id, person2Id);
+        return { message: `Friendship created between ${person1Id} and ${person2Id}` };
+    }
+    
+    async getFriends(personId: string) {
+        return this.gremlinService.getFriends(personId);
     }
 
     async listFriends(personId: string): Promise<string[]> {
@@ -30,31 +69,5 @@ export class PersonService {
         const person = await this.personRepository.findOneBy({id});
         if (!person) throw new NotFoundException('Person not found');
         return person;
-    }
-
-    createTest(): Promise<Person> {
-        const person = this.personRepository.create({
-            name: "Test",
-            email: "",
-            isActive: true,
-        });
-
-        return this.personRepository.save(person);
-    }
-
-    create(data: CreatePersonDto) {
-        const person = this.personRepository.create(data);
-        return this.personRepository.save(person);
-    }
-
-    async update(id: string, data: UpdatePersonDto) {
-        await this.findOne(id);
-        await this.personRepository.update(id, data);
-        return this.findOne(id);
-    }
-
-    async remove(id: string) {
-        const person = await this.findOne(id);
-        return this.personRepository.remove(person);
     }
 }
