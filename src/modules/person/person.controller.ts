@@ -19,7 +19,7 @@ export class PersonController {
 
     @Get(':id')
     findOne(@Param('id') id: string) {
-        return this.personService.findOne(+id);
+        return this.personService.findOne(id);
     }
 
     @Post()
@@ -29,11 +29,11 @@ export class PersonController {
 
     @Put(':id')
     update(@Param('id') id: string, @Body() dto: UpdatePersonDto) {
-        return this.personService.update(+id, dto);
+        return this.personService.update(id, dto);
     }
 
     @Delete(':id')
     remove(@Param('id') id: string) {
-        return this.personService.remove(+id);
+        return this.personService.remove(id);
     }
 }

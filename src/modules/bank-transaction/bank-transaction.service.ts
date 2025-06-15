@@ -11,22 +11,19 @@ export class BankTransactionService {
         @InjectRepository(BankTransaction)
         private readonly txRepo: Repository<BankTransaction>,
         @InjectRepository(BankAccount)
-        private readonly accountRepo: Repository<BankAccount>,
-    ) {
-    }
+        private readonly bankAccountRepo: Repository<BankAccount>,
+    ) {}
 
     async create(dto: CreateBankTransactionDto) {
-        const account = await this.accountRepo.findOneBy({iban: dto.iban});
-      if (!account) throw new NotFoundException(`Bank account with IBAN ${dto.iban} not found`);
-
-      const {amount, description, iban, createdAt} = dto;
+        const bankAccount = await this.bankAccountRepo.findOneBy({ iban: dto.iban });
+        if (!bankAccount) {
+            throw new NotFoundException(`Bank account with IBAN ${dto.iban} not found.`);
+        }
 
         const transaction = this.txRepo.create({
-            amount,
-            description,
-            iban,
-            bankAccount: account,
-            createdAt: new Date(createdAt ?? Date.now()),
+            amount: dto.amount,
+            description: dto.description,
+            bankAccount: bankAccount,
         });
 
         return this.txRepo.save(transaction);
@@ -36,23 +33,23 @@ export class BankTransactionService {
         return this.txRepo.find({relations: ['bankAccount']});
     }
 
-    async findOne(id: number) {
-        const tx = await this.txRepo.findOne({
+    async findOne(id: string) {
+        const transaction = await this.txRepo.findOne({
             where: {id},
             relations: ['bankAccount'],
         });
-        if (!tx) throw new NotFoundException('Transaction not found');
-        return tx;
+        if (!transaction) throw new NotFoundException('BankTransaction not found');
+        return transaction;
+    }
+    
+    async update(id: string, dto: Partial<CreateBankTransactionDto>) {
+        const existing = await this.findOne(id);
+        Object.assign(existing, dto);
+        return this.txRepo.save(existing);
     }
 
-  async update(id: number, dto: Partial<CreateBankTransactionDto>) {
-    const tx = await this.findOne(id);
-    const updated = Object.assign(tx, dto);
-    return this.txRepo.save(updated);
-  }
-
-    async remove(id: number) {
-        const tx = await this.findOne(id);
-        return this.txRepo.remove(tx);
+    async remove(id: string) {
+        const existing = await this.findOne(id);
+        return this.txRepo.remove(existing);
     }
 }

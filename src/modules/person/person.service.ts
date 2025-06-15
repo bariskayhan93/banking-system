@@ -16,7 +16,7 @@ export class PersonService {
         return this.personRepository.find();
     }
 
-    async findOne(id: number) {
+    async findOne(id: string) {
         const person = await this.personRepository.findOneBy({id});
         if (!person) throw new NotFoundException('Person not found');
         return person;
@@ -38,13 +38,13 @@ export class PersonService {
         return this.personRepository.save(person);
     }
 
-    async update(id: number, data: UpdatePersonDto) {
+    async update(id: string, data: UpdatePersonDto) {
         await this.findOne(id);
         await this.personRepository.update(id, data);
         return this.findOne(id);
     }
 
-    async remove(id: number) {
+    async remove(id: string) {
         const person = await this.findOne(id);
         return this.personRepository.remove(person);
     }

@@ -27,7 +27,7 @@ export class ProcessService {
                 (sum, tx) => sum + Number(tx.amount),
                 0,
             );
-            await accountRepo.update(account.id, {balance});
+            await accountRepo.update(account.iban, {balance});
         }
 
         console.log('Updated account balances.');

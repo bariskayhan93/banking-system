@@ -3,8 +3,8 @@ import {BankAccount} from "../../bank-account/bank-account.entity";
 
 @Entity()
 export class Person {
-    @PrimaryGeneratedColumn()
-    id: number;
+    @PrimaryGeneratedColumn('uuid')
+    id: string;
 
     @Column()
     firstName: string;

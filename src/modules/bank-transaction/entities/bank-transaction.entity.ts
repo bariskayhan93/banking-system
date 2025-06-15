@@ -1,26 +1,26 @@
 import {
-    Entity, PrimaryGeneratedColumn, Column, ManyToOne, In, Index,
+    Entity, PrimaryGeneratedColumn, Column, ManyToOne, In, Index, JoinColumn, CreateDateColumn,
 } from 'typeorm';
 import {BankAccount} from "../../bank-account/bank-account.entity";
 
 @Entity()
 export class BankTransaction {
-    @PrimaryGeneratedColumn()
-    id: number;
+    @PrimaryGeneratedColumn('uuid')
+    id: string;
 
-    @Column()
-    @Index()
-    iban: string;
-
-    @Column('decimal', {precision: 12, scale: 2})
+    @Column('numeric', {precision: 15, scale: 2})
     amount: number;
-    
+
     @Column({nullable: true})
     description?: string;
 
     @ManyToOne(() => BankAccount, (account) => account.transactions, {onDelete: 'CASCADE'})
+    @JoinColumn({ name: 'bank_account_iban' })
     bankAccount: BankAccount;
 
-    @Column()
+    @CreateDateColumn()
     createdAt: Date;
+
+    @Column({ type: 'timestamp', nullable: true })
+    processed_at: Date;
 }

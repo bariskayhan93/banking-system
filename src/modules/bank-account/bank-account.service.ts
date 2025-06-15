@@ -32,17 +32,17 @@ export class BankAccountService {
         return this.bankRepo.find({relations: ['person']});
     }
 
-    async findOne(id: number) {
+    async findOne(iban: string) {
         const account = await this.bankRepo.findOne({
-            where: {id},
+            where: {iban},
             relations: ['person'],
         });
         if (!account) throw new NotFoundException('BankAccount not found');
         return account;
     }
 
-    async update(id: number, dto: UpdateBankAccountDto) {
-        const existing = await this.findOne(id);
+    async update(iban: string, dto: UpdateBankAccountDto) {
+        const existing = await this.findOne(iban);
 
         if (dto.personId) {
             const person = await this.personRepo.findOneBy({id: dto.personId});
@@ -50,12 +50,14 @@ export class BankAccountService {
             existing.person = person;
         }
 
-        Object.assign(existing, dto);
+        const { personId, ...updateData } = dto;
+        Object.assign(existing, updateData);
+        
         return this.bankRepo.save(existing);
     }
 
-    async remove(id: number) {
-        const existing = await this.findOne(id);
+    async remove(iban: string) {
+        const existing = await this.findOne(iban);
         return this.bankRepo.remove(existing);
     }
 }

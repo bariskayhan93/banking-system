@@ -21,9 +21,9 @@ export class BankAccountController {
         return this.service.findAll();
     }
 
-    @Get(':id')
-    findOne(@Param('id') id: string) {
-        return this.service.findOne(+id);
+    @Get(':iban')
+    findOne(@Param('iban') iban: string) {
+        return this.service.findOne(iban);
     }
 
     @Post()
@@ -31,13 +31,13 @@ export class BankAccountController {
         return this.service.create(dto);
     }
 
-    @Put(':id')
-    update(@Param('id') id: string, @Body() dto: UpdateBankAccountDto) {
-        return this.service.update(+id, dto);
+    @Put(':iban')
+    update(@Param('iban') iban: string, @Body() dto: UpdateBankAccountDto) {
+        return this.service.update(iban, dto);
     }
 
-    @Delete(':id')
-    remove(@Param('id') id: string) {
-        return this.service.remove(+id);
+    @Delete(':iban')
+    remove(@Param('iban') iban: string) {
+        return this.service.remove(iban);
     }
 }

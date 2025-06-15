@@ -1,12 +1,14 @@
-import {IsNotEmpty} from 'class-validator';
+import {IsNotEmpty, IsString, IsUUID} from 'class-validator';
 
 export class CreateBankAccountDto {
+    @IsString()
     @IsNotEmpty()
     iban: string;
 
+    @IsString()
     @IsNotEmpty()
     bankName: string;
 
-    @IsNotEmpty()
-    personId: number;
+    @IsUUID()
+    personId: string;
 }
