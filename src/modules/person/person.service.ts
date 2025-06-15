@@ -4,13 +4,23 @@ import {Repository} from 'typeorm';
 import {Person} from './entities/person.entity';
 import {CreatePersonDto} from './dto/create-person.dto';
 import {UpdatePersonDto} from './dto/update-person.dto';
+import {GremlinService} from "../gremlin/services/gremlin.service";
 
 @Injectable()
 export class PersonService {
     constructor(
         @InjectRepository(Person)
         private readonly personRepository: Repository<Person>,
+        private readonly gremlinService: GremlinService,
     ) {}
+
+    async makeFriends(person1Id: string, person2Id: string) {
+        await this.gremlinService.addFriendship(person1Id, person2Id);
+    }
+
+    async listFriends(personId: string): Promise<string[]> {
+        return this.gremlinService.getFriendIds(personId);
+    }
 
     findAll() {
         return this.personRepository.find();

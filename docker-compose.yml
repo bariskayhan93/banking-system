@@ -1,8 +1,6 @@
-version: '3.8'
-
 services:
   localhost:
-    image: postgres:15
+    image: postgres:16-alpine
     restart: unless-stopped
     environment:
       POSTGRES_USER: postgres
@@ -12,6 +10,13 @@ services:
       - '5432:5432'
     volumes:
       - pgdata:/var/lib/postgresql/data
+        
+  gremlin-server:
+    image: tinkerpop/gremlin-server:latest
+    platform: linux/amd64
+    restart: unless-stopped
+    ports:
+      - "8182:8182"
 
 volumes:
   pgdata:

@@ -7,6 +7,7 @@ import {BankTransactionModule} from './modules/bank-transaction/bank-transaction
 import {TestModule} from './modules/test/test.module';
 import {typeOrmConfig} from "./typeorm.config";
 import {BankProcessModule} from './modules/bank-process/bank-process.module';
+import {GremlinModule} from "./modules/gremlin/gremlin.module";
 
 @Module({
     imports: [
@@ -20,6 +21,7 @@ import {BankProcessModule} from './modules/bank-process/bank-process.module';
         BankTransactionModule,
         BankProcessModule,
         TestModule,
+        GremlinModule,
     ],
 })
 export class AppModule {
