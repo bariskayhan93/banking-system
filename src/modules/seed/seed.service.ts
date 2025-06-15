@@ -26,9 +26,32 @@ export class SeedService implements OnModuleInit {
         }
     }
 
-    async seed() {
+    async checkIfSeeded(): Promise<boolean> {
         const count = await this.personRepository.count();
-        if (count > 0) {
+        return count > 0;
+    }
+
+    async resetAndReseed(): Promise<void> {
+        this.logger.log('Resetting database and reseeding');
+        
+        try {
+            await this.gremlinService.clearAll();
+        } catch (error) {
+            this.logger.error('Error clearing Gremlin graph', error);
+        }
+
+        await this.transactionRepository.delete({});
+        await this.bankAccountRepository.delete({});
+        await this.personRepository.delete({});
+        
+        await this.seed();
+        
+        this.logger.log('Database reset and reseeded successfully');
+    }
+
+    async seed() {
+        const isSeeded = await this.checkIfSeeded();
+        if (isSeeded) {
             this.logger.log('Database already seeded, skipping');
             return;
         }
@@ -62,7 +85,7 @@ export class SeedService implements OnModuleInit {
             const savedPerson = await this.personRepository.save(person);
             persons.push(savedPerson);
 
-            await this.gremlinService.addPersonVertex(savedPerson.id, {
+            await this.gremlinService.savePerson(savedPerson.id, {
                 name: savedPerson.name,
                 email: savedPerson.email!
             });
@@ -137,7 +160,7 @@ export class SeedService implements OnModuleInit {
 
         for (const [idx1, idx2] of friendshipPairs) {
             if (idx1 < persons.length && idx2 < persons.length) {
-                await this.gremlinService.addFriendship(persons[idx1].id, persons[idx2].id);
+                await this.gremlinService.addFriend(persons[idx1].id, persons[idx2].id);
             }
         }
     }

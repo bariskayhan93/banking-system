@@ -1,7 +1,7 @@
 import { Test, TestingModule } from '@nestjs/testing';
 import { BankProcessController } from './bank-process.controller';
 
-describe('BankProcessController', () => {
+describe('ProcessController', () => {
   let controller: BankProcessController;
 
   beforeEach(async () => {

@@ -18,7 +18,7 @@ export class PersonService {
         const person: Person = this.personRepository.create(createPersonDto);
         const savedPerson = await this.personRepository.save(person);
         
-        await this.gremlinService.addPersonVertex(savedPerson.id, {
+        await this.gremlinService.savePerson(savedPerson.id, {
             name: savedPerson.name,
             email: savedPerson.email!
         });
@@ -31,7 +31,7 @@ export class PersonService {
         const updatedPerson = Object.assign(person, data);
         await this.personRepository.update(person.id, updatedPerson);
         
-        await this.gremlinService.addPersonVertex(updatedPerson.id, {
+        await this.gremlinService.savePerson(updatedPerson.id, {
             name: updatedPerson.name,
             email: updatedPerson.email!
         });
@@ -41,26 +41,22 @@ export class PersonService {
 
     async remove(id: string) {
         const person = await this.findOne(id);
-        await this.gremlinService.removePersonVertex(person.id);
+        await this.gremlinService.deletePerson(person.id);
         return this.personRepository.remove(person);
     }
 
     async makeFriends(person1Id: string, person2Id: string) {
-        await this.gremlinService.getPersonVertex(person1Id);
-        await this.gremlinService.getPersonVertex(person2Id);
+        await this.gremlinService.getPerson(person1Id);
+        await this.gremlinService.getPerson(person2Id);
 
-        await this.gremlinService.addFriendship(person1Id, person2Id);
+        await this.gremlinService.addFriend(person1Id, person2Id);
         return { message: `Friendship created between ${person1Id} and ${person2Id}` };
     }
     
     async getFriends(personId: string) {
         return this.gremlinService.getFriends(personId);
     }
-
-    async listFriends(personId: string): Promise<string[]> {
-        return this.gremlinService.getFriendIds(personId);
-    }
-
+    
     findAll() {
         return this.personRepository.find();
     }

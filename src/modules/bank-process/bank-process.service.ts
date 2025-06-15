@@ -6,7 +6,7 @@ import {Friendship} from "../person/entities/friendship.entity";
 import {LoanPotential} from "./dto/loan-potential.dto";
 
 @Injectable()
-export class ProcessService {
+export class BankProcessService {
     constructor(private readonly dataSource: DataSource) {}
 
     async handleProcess(processId: number) {

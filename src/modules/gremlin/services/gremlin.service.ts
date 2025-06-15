@@ -4,109 +4,69 @@ import {PersonDto} from '../../person/dto/person.dto';
 
 @Injectable()
 export class GremlinService implements OnModuleInit, OnModuleDestroy {
-    private readonly logger = new Logger(GremlinService.name);
-    private client: driver.Client;
-    public g: gprocess.GraphTraversalSource;
+  private logger = new Logger(GremlinService.name);
+  private client: driver.Client;
+  public g: gprocess.GraphTraversalSource;
 
-    async onModuleInit() {
-        const remoteUrl = process.env.GREMLIN_REMOTE_URL || 'ws://localhost:8182/gremlin';
-
-        this.client = new driver.Client(remoteUrl, {traversalSource: 'g'});
-
-        try {
-            await this.client.open();
-            this.g = gprocess.traversal().withRemote(new driver.DriverRemoteConnection(remoteUrl, {}));
-            this.logger.log(`Gremlin client connected to ${remoteUrl}`);
-        } catch (error) {
-            this.logger.error(`Failed to connect to Gremlin Server at ${remoteUrl}:`, error);
-            throw error;
-        }
-    }
-
-    async onModuleDestroy() {
-        if (this.client) {
-            try {
-                await this.client.close();
-                this.logger.log('Gremlin client disconnected');
-            } catch (error) {
-                this.logger.error('Error disconnecting Gremlin client:', error);
-            }
-        }
-    }
-
-    async getPersonVertex(personId: string): Promise<any> {
-        const { value: vertex } = await this.g.V(personId).next();
-        if (!vertex) {
-            throw new NotFoundException(`Person with ID ${personId} not found`);
-        }
-        const properties = await this.g.V(personId).valueMap(true).next();
-        return properties.value;
-    }
-
-    async addPersonVertex(personId: string, properties: { name: string, email: string }): Promise<void> {
-        const { value: vertex } = await this.g.V(personId).next();
-        if (vertex) {
-            await this.g.V(personId)
-                .property('name', properties.name)
-                .property('email', properties.email)
-                .next();
-        } else {
-            await this.g.addV('person')
-                .property(gprocess.t.id, personId)
-                .property('name', properties.name)
-                .property('email', properties.email)
-                .next();
-        }
-    }
+  async onModuleInit() {
+    const url = process.env.GREMLIN_REMOTE_URL || 'ws://localhost:8182/gremlin';
+    this.client = new driver.Client(url, { traversalSource: 'g' });
     
-    async removePersonVertex(personId: string): Promise<void> {
-        const { value: vertex } = await this.g.V(personId).next();
-        if (!vertex) {
-            throw new NotFoundException(`Person with ID ${personId} not found`);
-        }
-        await this.g.V(personId).drop().iterate();
-        this.logger.log(`Person vertex with ID ${personId} removed`);
+    try {
+      await this.client.open();
+      this.g = gprocess.traversal().withRemote(new driver.DriverRemoteConnection(url));
+      this.logger.log(`Connected to Gremlin Server at ${url}`);
+    } catch (error) {
+      this.logger.error(`Connection failed: ${error.message}`);
+      throw error;
     }
+  }
 
-    async addFriendship(person1Id: string, person2Id: string): Promise<void> {
-        if (person1Id === person2Id) return;
+  async onModuleDestroy() {
+    if (this.client) await this.client.close().catch(e => this.logger.error(e));
+  }
 
-        const { value: edge1 } = await this.g.V(person1Id).outE('has_friend').where(gprocess.statics.otherV().hasId(person2Id)).next();
-        if (!edge1) {
-            await this.g.V(person1Id).addE('has_friend').to(this.g.V(person2Id)).next();
-        }
+  // Vertex operations
+  async getPerson(id: string): Promise<Record<string, any>> {
+    const vertex = await this.g.V(id).valueMap(true).next();
+    if (!vertex.value) throw new NotFoundException(`Person ${id} not found`);
+    return vertex.value;
+  }
 
-        const { value: edge2 } = await this.g.V(person2Id).outE('has_friend').where(gprocess.statics.otherV().hasId(person1Id)).next();
-        if (!edge2) {
-            await this.g.V(person2Id).addE('has_friend').to(this.g.V(person1Id)).next();
-        }
+  async savePerson(id: string, { name, email }: { name: string; email: string }): Promise<void> {
+    await (await this.g.V(id).hasNext() 
+      ? this.g.V(id).property('name', name).property('email', email)
+      : this.g.addV('person').property(gprocess.t.id, id).property('name', name).property('email', email)
+    ).next();
+  }
+
+  async deletePerson(id: string): Promise<void> {
+    if (!await this.g.V(id).hasNext()) throw new NotFoundException(`Person ${id} not found`);
+    await this.g.V(id).drop().iterate();
+  }
+
+  // Edge operations
+  async addFriend(a: string, b: string): Promise<void> {
+    if (a === b) return;
+    if (!await this.g.V(a).bothE('has_friend').where(gprocess.statics.otherV().hasId(b)).hasNext()) {
+      await this.g.V(a).addE('has_friend').to(gprocess.statics.V(b)).next();
     }
+  }
 
-    async getFriends(personId: string): Promise<PersonDto[]> {
-        const { value: vertex } = await this.g.V(personId).next();
-        if (!vertex) {
-            throw new NotFoundException(`Person with ID ${personId} not found`);
-        }
-        
-        const friends = await this.g.V(personId).both('has_friend').valueMap(true).toList();
-        return friends.map(friend => {
+  async removeFriend(a: string, b: string): Promise<void> {
+    await this.g.V(a).bothE('has_friend').where(gprocess.statics.otherV().hasId(b)).drop().iterate();
+  }
 
-            const friendObj = friend as any;
-            return {
-                id: friendObj.id ? friendObj.id.toString() : personId,
-                name: friendObj.name && Array.isArray(friendObj.name) ? friendObj.name[0].toString() : '',
-                email: friendObj.email && Array.isArray(friendObj.email) ? friendObj.email[0].toString() : undefined
-            };
-        });
-    }
+  async getFriends(id: string): Promise<PersonDto[]> {
+    const friends = await this.g.V(id).both('has_friend').valueMap(true).toList();
+    return friends.map((f:any) => ({
+      id: f.id?.toString(),
+      name: f.name?.[0]?.toString() || '',
+      email: f.email?.[0]?.toString()
+    }));
+  }
 
-    async getFriendIds(personId: string): Promise<string[]> {
-        const friendVertices = await this.g.V(personId).both('has_friend').id().toList();
-        return friendVertices as string[];
-    }
-
-    async removeFriendship(person1Id: string, person2Id: string): Promise<void> {
-        await this.g.V(person1Id).bothE('has_friend').where(gprocess.statics.otherV().hasId(person2Id)).drop().iterate();
-        this.logger.log(`Friendship removed between ${person1Id} and ${person2Id}`);
-    }
+  async clearAll(): Promise<void> {
+    await this.g.V().drop().iterate();
+  }
 }
