@@ -34,8 +34,7 @@ export class PersonService {
 
     createTest(): Promise<Person> {
         const person = this.personRepository.create({
-            firstName: "Test",
-            lastName: "Test",
+            name: "Test",
             email: "",
             isActive: true,
         });
