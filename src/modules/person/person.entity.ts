@@ -1,4 +1,5 @@
-import {Entity, PrimaryGeneratedColumn, Column} from 'typeorm';
+import {Entity, PrimaryGeneratedColumn, Column, OneToMany} from 'typeorm';
+import {BankAccount} from "../bank-account/bank-account.entity";
 
 @Entity()
 export class Person {
@@ -16,4 +17,7 @@ export class Person {
 
     @Column({default: true})
     isActive: boolean;
+    
+    @OneToMany(() => BankAccount, (bankAccount) => bankAccount.person)
+    bankAccounts: BankAccount[];
 }
