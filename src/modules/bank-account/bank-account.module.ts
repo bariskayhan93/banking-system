@@ -9,5 +9,6 @@ import {Person} from '../person/entities/person.entity';
     imports: [TypeOrmModule.forFeature([BankAccount, Person])],
     providers: [BankAccountService],
     controllers: [BankAccountController],
+    exports: [TypeOrmModule],
 })
 export class BankAccountModule {}

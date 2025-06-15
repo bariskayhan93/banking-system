@@ -1,5 +1,5 @@
 import {
-    Entity, PrimaryGeneratedColumn, Column, ManyToOne,
+    Entity, PrimaryGeneratedColumn, Column, ManyToOne, In, Index,
 } from 'typeorm';
 import {BankAccount} from "../../bank-account/bank-account.entity";
 
@@ -9,10 +9,14 @@ export class BankTransaction {
     id: number;
 
     @Column()
-    counterpartyIban: string;
+    @Index()
+    iban: string;
 
     @Column('decimal', {precision: 12, scale: 2})
     amount: number;
+    
+    @Column({nullable: true})
+    description?: string;
 
     @ManyToOne(() => BankAccount, (account) => account.transactions, {onDelete: 'CASCADE'})
     bankAccount: BankAccount;

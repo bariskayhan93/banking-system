@@ -12,6 +12,11 @@ export class BankTransactionController {
         return this.bankTransactionService.create(createBankTransactionDto);
     }
 
+    @Patch(':id')
+    update(@Param('id') id: string, @Body() dto: Partial<CreateBankTransactionDto>) {
+        return this.bankTransactionService.update(+id, dto);
+    }
+
     @Get()
     findAll() {
         return this.bankTransactionService.findAll();
@@ -20,11 +25,6 @@ export class BankTransactionController {
     @Get(':id')
     findOne(@Param('id') id: string) {
         return this.bankTransactionService.findOne(+id);
-    }
-
-    @Patch(':id')
-    update(@Param('id') id: string, @Body() updateBankTransactionDto: UpdateBankTransactionDto) {
-        return this.bankTransactionService.update(+id, updateBankTransactionDto);
     }
 
     @Delete(':id')

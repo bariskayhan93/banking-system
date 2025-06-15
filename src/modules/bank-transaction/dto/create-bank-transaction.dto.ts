@@ -1,16 +1,18 @@
-import {IsString, IsNumber, IsDateString, IsNotEmpty} from 'class-validator';
+import {IsString, IsNumber, IsDateString, IsNotEmpty, IsOptional} from 'class-validator';
 
 export class CreateBankTransactionDto {
     @IsString()
     @IsNotEmpty()
-    counterpartyIban: string;
+    iban: string;
 
     @IsNumber()
     amount: number;
+    
+    @IsOptional()
+    @IsString()
+    description?: string;
 
-    @IsNotEmpty()
-    bankAccountId: number;
-
+    @IsOptional()
     @IsDateString()
     createdAt: string;
 }
