@@ -18,10 +18,10 @@ export class PersonService {
         const person: Person = this.personRepository.create(createPersonDto);
         const savedPerson = await this.personRepository.save(person);
         
-        await this.gremlinService.savePerson(savedPerson.id, {
-            name: savedPerson.name,
-            email: savedPerson.email!
-        });
+      //  await this.gremlinService.savePerson(savedPerson.id, {
+      //      name: savedPerson.name,
+      //      email: savedPerson.email!
+      //  });
         
         return savedPerson;
     }
@@ -31,17 +31,17 @@ export class PersonService {
         const updatedPerson = Object.assign(person, data);
         await this.personRepository.update(person.id, updatedPerson);
         
-        await this.gremlinService.savePerson(updatedPerson.id, {
-            name: updatedPerson.name,
-            email: updatedPerson.email!
-        });
+      //  await this.gremlinService.savePerson(updatedPerson.id, {
+      //      name: updatedPerson.name,
+      //      email: updatedPerson.email!
+      //  });
         
         return updatedPerson;
     }
 
     async remove(id: string) {
         const person = await this.findOne(id);
-        await this.gremlinService.deletePerson(person.id);
+      //  await this.gremlinService.deletePerson(person.id);
         return this.personRepository.remove(person);
     }
 

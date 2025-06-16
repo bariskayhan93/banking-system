@@ -26,7 +26,6 @@ export class GremlinService implements OnModuleInit, OnModuleDestroy {
     if (this.client) await this.client.close().catch(e => this.logger.error(e));
   }
 
-  // Vertex operations
   async getPerson(id: string): Promise<Record<string, any>> {
     const vertex = await this.g.V(id).valueMap(true).next();
     if (!vertex.value) throw new NotFoundException(`Person ${id} not found`);

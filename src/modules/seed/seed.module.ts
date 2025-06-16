@@ -5,6 +5,7 @@ import {GremlinModule} from '../gremlin/gremlin.module';
 import {Person} from '../person/entities/person.entity';
 import {BankAccount} from '../bank-account/bank-account.entity';
 import {BankTransaction} from '../bank-transaction/entities/bank-transaction.entity';
+import {SeedController} from "./seed.controller";
 
 @Module({
     imports: [
@@ -12,6 +13,7 @@ import {BankTransaction} from '../bank-transaction/entities/bank-transaction.ent
         GremlinModule
     ],
     providers: [SeedService],
+    controllers: [SeedController],
     exports: [SeedService]
 })
 export class SeedModule {}

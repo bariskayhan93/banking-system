@@ -1,0 +1,56 @@
+host: 172.18.0.2
+port: 8182
+
+threadPoolWorker: 2
+gremlinPool: 4
+evaluationTimeout: 30000
+
+channelizer: org.apache.tinkerpop.gremlin.server.channel.WebSocketChannelizer
+
+graphs: {
+  graph: conf/tinkergraph-inmemory.properties
+}
+
+scriptEngines: {
+  gremlin-groovy: {
+    plugins: {
+      org.apache.tinkerpop.gremlin.server.jsr223.GremlinServerGremlinPlugin: {},
+      org.apache.tinkerpop.gremlin.tinkergraph.jsr223.TinkerGraphGremlinPlugin: {},
+      org.apache.tinkerpop.gremlin.jsr223.ImportGremlinPlugin: {
+        classImports: [java.lang.Math],
+        methodImports: [java.lang.Math#*]
+      },
+      org.apache.tinkerpop.gremlin.jsr223.ScriptFileGremlinPlugin: { files: [] }
+    }
+  }
+}
+
+serializers:
+  - { className: org.apache.tinkerpop.gremlin.util.ser.GraphSONMessageSerializerV3d0, config: { ioRegistries: [org.apache.tinkerpop.gremlin.tinkergraph.structure.TinkerIoRegistryV3d0] }}
+  - { className: org.apache.tinkerpop.gremlin.util.ser.GraphSONMessageSerializerV2d0, config: { ioRegistries: [org.apache.tinkerpop.gremlin.tinkergraph.structure.TinkerIoRegistryV2d0] }} # Added V2d0 as a fallback
+  - { className: org.apache.tinkerpop.gremlin.util.ser.GraphBinaryMessageSerializerV1, config: { ioRegistries: [org.apache.tinkerpop.gremlin.tinkergraph.structure.TinkerIoRegistryV1] }}
+
+processors:
+  - { className: org.apache.tinkerpop.gremlin.server.op.standard.StandardOpProcessor, config: { maxContentLength: 65536000 }}
+  - { className: org.apache.tinkerpop.gremlin.server.op.session.SessionOpProcessor, config: { sessionTimeout: 28800000 }}
+  - { className: org.apache.tinkerpop.gremlin.server.op.traversal.TraversalOpProcessor, config: { cacheExpirationTime: 600000, cacheMaxSize: 1000 }}
+
+metrics: {
+  consoleReporter: {enabled: true, interval: 180000},
+  csvReporter: {enabled: false},
+  jmxReporter: {enabled: true},
+  slf4jReporter: {enabled: false},
+  gangliaReporter: {enabled: false},
+  graphiteReporter: {enabled: false}
+}
+
+strictTransactionManagement: false
+maxInitialLineLength: 4096
+maxHeaderSize: 8192
+maxChunkSize: 8192
+maxContentLength: 6553600
+maxParameters: 64
+maxAccumulationBufferComponents: 1024
+resultIterationBatchSize: 64
+writeBufferLowWaterMark: 32768
+writeBufferHighWaterMark: 65536

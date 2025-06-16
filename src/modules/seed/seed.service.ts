@@ -56,59 +56,65 @@ export class SeedService implements OnModuleInit {
             return;
         }
         
-        const persons = await this.seedPersons();
-
-        const accounts = await this.seedBankAccounts(persons);
-
-        await this.seedTransactions(accounts);
-
-        await this.seedFriendships(persons);
+        const persons = await this.seedPersonsOnly();
+        const accounts = await this.seedBankAccountsOnly(3, persons);
+        await this.seedTransactionsOnly(10);
+        await this.seedFriendshipsOnly(persons);
     }
 
-    async seedPersons() {
-        this.logger.log('Seeding persons');
+    async seedPersonsOnly(count: number = 7): Promise<Person[]> {
+        this.logger.log(`Seeding ${count} persons`);
 
-        const personData = [
-            {name: 'John Doe', email: 'john@example.com', isActive: true},
-            {name: 'Jane Smith', email: 'jane@example.com', isActive: true},
-            {name: 'Alice Johnson', email: 'alice@example.com', isActive: true},
-            {name: 'Bob Brown', email: 'bob@example.com', isActive: true},
-            {name: 'Charlie Davis', email: 'charlie@example.com', isActive: true},
-            {name: 'Diana Evans', email: 'diana@example.com', isActive: true},
-            {name: 'Edward Franklin', email: 'edward@example.com', isActive: true}
-        ];
-
+        const names = ['John Doe', 'Jane Smith', 'Alice Johnson', 'Bob Brown', 
+                      'Charlie Davis', 'Diana Evans', 'Edward Franklin', 'Fiona Grant',
+                      'George Harris', 'Hannah Irving', 'Ian Jackson', 'Julia King'];
+        
         const persons: Person[] = [];
 
-        for (const data of personData) {
-            const person = this.personRepository.create(data);
+        for (let i = 0; i < Math.min(count, names.length); i++) {
+            const firstName = names[i].split(' ')[0].toLowerCase();
+            const personData = {
+                name: names[i],
+                email: `${firstName}@example.com`,
+                isActive: true
+            };
+
+            const person = this.personRepository.create(personData);
             const savedPerson = await this.personRepository.save(person);
             persons.push(savedPerson);
 
-            await this.gremlinService.savePerson(savedPerson.id, {
-                name: savedPerson.name,
-                email: savedPerson.email!
-            });
+         //   await this.gremlinService.savePerson(savedPerson.id, {
+         //       name: savedPerson.name,
+         //       email: savedPerson.email!
+         //   });
         }
 
         return persons;
     }
 
-    async seedBankAccounts(persons) {
+    async seedBankAccountsOnly(maxAccountsPerPerson: number = 3, specificPersons?: Person[]): Promise<BankAccount[]> {
         this.logger.log('Seeding bank accounts');
 
+        const persons = specificPersons || await this.personRepository.find();
+        if (persons.length === 0) {
+            this.logger.warn('No persons found to create bank accounts for');
+            return [];
+        }
+
         const accounts: BankAccount[] = [];
+        const bankNames = ['Chase', 'Bank of America', 'Wells Fargo', 'Citibank', 'Capital One'];
 
         for (const person of persons) {
-            const numAccounts = 2 + Math.floor(Math.random() * 2);
+            const numAccounts = 1 + Math.floor(Math.random() * maxAccountsPerPerson);
 
             for (let i = 0; i < numAccounts; i++) {
-                const bankNames = ['Chase', 'Bank of America', 'Wells Fargo', 'Citibank', 'Capital One'];
                 const randomBank = bankNames[Math.floor(Math.random() * bankNames.length)];
+                const initialBalance = 1000 + Math.floor(Math.random() * 9000);
 
                 const account = this.bankAccountRepository.create({
                     iban: `IBAN${Math.random().toString(36).substring(2, 12)}`,
                     bankName: randomBank,
+                    balance: initialBalance,
                     person: person
                 });
 
@@ -120,12 +126,50 @@ export class SeedService implements OnModuleInit {
         return accounts;
     }
 
-    async seedTransactions(accounts: BankAccount[]): Promise<void> {
+    async seedTransactionsOnly(maxPerAccount: number = 10): Promise<number> {
         this.logger.log('Seeding transactions');
 
-        for (const account of accounts) {
-            await this.createRandomTransactionsForAccount(account, 5 + Math.floor(Math.random() * 6));
+        const accounts = await this.bankAccountRepository.find();
+        if (accounts.length === 0) {
+            this.logger.warn('No bank accounts found to create transactions for');
+            return 0;
         }
+
+        let totalTransactions = 0;
+        for (const account of accounts) {
+            const txCount = 2 + Math.floor(Math.random() * (maxPerAccount - 1));
+            await this.createRandomTransactionsForAccount(account, txCount);
+            totalTransactions += txCount;
+        }
+
+        return totalTransactions;
+    }
+
+    async seedFriendshipsOnly(specificPersons?: Person[]): Promise<number> {
+        this.logger.log('Seeding friendships');
+
+        const persons = specificPersons || await this.personRepository.find();
+        if (persons.length < 2) {
+            this.logger.warn('Not enough persons found to create friendships');
+            return 0;
+        }
+
+        let friendshipCount = 0;
+        for (let i = 0; i < persons.length; i++) {
+            const connectionsCount = 1 + Math.floor(Math.random() * 3);
+            
+            for (let j = 0; j < connectionsCount; j++) {
+                let friendIndex;
+                do {
+                    friendIndex = Math.floor(Math.random() * persons.length);
+                } while (friendIndex === i);
+                
+                await this.gremlinService.addFriend(persons[i].id, persons[friendIndex].id);
+                friendshipCount++;
+            }
+        }
+
+        return friendshipCount;
     }
 
     private async createRandomTransactionsForAccount(account: BankAccount, count: number): Promise<void> {
@@ -148,20 +192,6 @@ export class SeedService implements OnModuleInit {
             });
 
             await this.transactionRepository.save(transaction);
-        }
-    }
-
-    async seedFriendships(persons) {
-        this.logger.log('Seeding friendships');
-
-        const friendshipPairs = [
-            [0, 1], [0, 2], [1, 3], [2, 4], [3, 5], [4, 6], [1, 4]
-        ];
-
-        for (const [idx1, idx2] of friendshipPairs) {
-            if (idx1 < persons.length && idx2 < persons.length) {
-                await this.gremlinService.addFriend(persons[idx1].id, persons[idx2].id);
-            }
         }
     }
 }
