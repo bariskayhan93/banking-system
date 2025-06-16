@@ -1,9 +1,9 @@
 import {Injectable} from "@nestjs/common";
 import {DataSource} from "typeorm";
-import {BankAccount} from "../bank-account/bank-account.entity";
 import {Person} from "../person/entities/person.entity";
 import {Friendship} from "../person/entities/friendship.entity";
 import {LoanPotential} from "./dto/loan-potential.dto";
+import {BankAccount} from "../bank-account/entities/bank-account.entity";
 
 @Injectable()
 export class BankProcessService {

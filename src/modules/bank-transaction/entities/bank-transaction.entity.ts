@@ -1,7 +1,7 @@
 import {
     Entity, PrimaryGeneratedColumn, Column, ManyToOne, In, Index, JoinColumn, CreateDateColumn,
 } from 'typeorm';
-import {BankAccount} from "../../bank-account/bank-account.entity";
+import {BankAccount} from "../../bank-account/entities/bank-account.entity";
 
 @Entity()
 export class BankTransaction {

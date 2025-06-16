@@ -1,10 +1,10 @@
 import {Injectable, NotFoundException} from '@nestjs/common';
 import {InjectRepository} from '@nestjs/typeorm';
 import {Repository} from 'typeorm';
-import {BankAccount} from './bank-account.entity';
 import {Person} from '../person/entities/person.entity';
 import {CreateBankAccountDto} from "./dto/create-bank-account.dto";
 import {UpdateBankAccountDto} from "./dto/update-bank-account.dto";
+import {BankAccount} from "./entities/bank-account.entity";
 
 @Injectable()
 export class BankAccountService {

@@ -3,9 +3,9 @@ import {TypeOrmModule} from '@nestjs/typeorm';
 import {SeedService} from './seed.service';
 import {GremlinModule} from '../gremlin/gremlin.module';
 import {Person} from '../person/entities/person.entity';
-import {BankAccount} from '../bank-account/bank-account.entity';
 import {BankTransaction} from '../bank-transaction/entities/bank-transaction.entity';
 import {SeedController} from "./seed.controller";
+import {BankAccount} from "../bank-account/entities/bank-account.entity";
 
 @Module({
     imports: [

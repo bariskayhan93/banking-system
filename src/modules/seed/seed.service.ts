@@ -2,9 +2,9 @@ import {Injectable, Logger, OnModuleInit} from '@nestjs/common';
 import {InjectRepository} from '@nestjs/typeorm';
 import {Repository} from 'typeorm';
 import {Person} from '../person/entities/person.entity';
-import {BankAccount} from '../bank-account/bank-account.entity';
 import {BankTransaction} from '../bank-transaction/entities/bank-transaction.entity';
 import {GremlinService} from '../gremlin/services/gremlin.service';
+import {BankAccount} from "../bank-account/entities/bank-account.entity";
 
 @Injectable()
 export class SeedService implements OnModuleInit {

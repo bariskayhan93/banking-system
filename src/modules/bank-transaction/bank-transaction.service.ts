@@ -3,7 +3,7 @@ import {CreateBankTransactionDto} from './dto/create-bank-transaction.dto';
 import {Repository} from "typeorm";
 import {InjectRepository} from "@nestjs/typeorm";
 import {BankTransaction} from "./entities/bank-transaction.entity";
-import {BankAccount} from "../bank-account/bank-account.entity";
+import {BankAccount} from "../bank-account/entities/bank-account.entity";
 
 @Injectable()
 export class BankTransactionService {
