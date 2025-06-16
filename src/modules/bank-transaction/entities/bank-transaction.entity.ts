@@ -15,7 +15,7 @@ export class BankTransaction {
     description?: string;
 
     @ManyToOne(() => BankAccount, (account) => account.transactions, {onDelete: 'CASCADE'})
-    @JoinColumn({ name: 'bank_account_iban' })
+    @JoinColumn({ name: 'iban' })
     bankAccount: BankAccount;
 
     @CreateDateColumn()

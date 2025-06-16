@@ -1,18 +1,33 @@
-import { Test, TestingModule } from '@nestjs/testing';
-import { BankAccountController } from './bank-account.controller';
+import {Test, TestingModule} from '@nestjs/testing';
+import {BankAccountController} from './bank-account.controller';
+import {BankAccountService} from './bank-account.service';
 
 describe('BankAccountController', () => {
-  let controller: BankAccountController;
+    let controller: BankAccountController;
 
-  beforeEach(async () => {
-    const module: TestingModule = await Test.createTestingModule({
-      controllers: [BankAccountController],
-    }).compile();
+    const mockBankAccountService = {
+        findAll: jest.fn(),
+        findOne: jest.fn(),
+        create: jest.fn(),
+        update: jest.fn(),
+        remove: jest.fn(),
+    };
 
-    controller = module.get<BankAccountController>(BankAccountController);
-  });
+    beforeEach(async () => {
+        const module: TestingModule = await Test.createTestingModule({
+            controllers: [BankAccountController],
+            providers: [
+                {
+                    provide: BankAccountService,
+                    useValue: mockBankAccountService,
+                },
+            ],
+        }).compile();
 
-  it('should be defined', () => {
-    expect(controller).toBeDefined();
-  });
+        controller = module.get<BankAccountController>(BankAccountController);
+    });
+
+    it('should be defined', () => {
+        expect(controller).toBeDefined();
+    });
 });

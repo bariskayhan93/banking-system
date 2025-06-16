@@ -4,7 +4,7 @@ import {LoanPotential} from "./dto/loan-potential.dto";
 import {ApiBody, ApiResponse} from "@nestjs/swagger";
 import {ProcessDto} from "./dto/process.dto";
 
-@Controller('process')
+@Controller('processes')
 export class BankProcessController {
     constructor(private readonly processingService: BankProcessService) {}
 

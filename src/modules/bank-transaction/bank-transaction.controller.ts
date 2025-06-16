@@ -3,7 +3,7 @@ import {BankTransactionService} from './bank-transaction.service';
 import {CreateBankTransactionDto} from './dto/create-bank-transaction.dto';
 import {UpdateBankTransactionDto} from './dto/update-bank-transaction.dto';
 
-@Controller('bank-transaction')
+@Controller('bank-transactions')
 export class BankTransactionController {
     constructor(private readonly bankTransactionService: BankTransactionService) {}
 
