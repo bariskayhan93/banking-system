@@ -1,31 +1,54 @@
 services:
-  localhost:
-    image: postgres:16-alpine
-    restart: unless-stopped
+  app:
+    build:
+      context: .
+      dockerfile: Dockerfile.dev
+    container_name: banking-app
+    ports:
+      - "3000:3000"
+    environment:
+      NODE_ENV: development
+      DB_HOST: postgres
+      DB_PORT: 5432
+      DB_USERNAME: postgres
+      DB_PASSWORD: postgres
+      DB_DATABASE: banking
+      GREMLIN_HOST: tinkergraph
+      GREMLIN_PORT: 8182
+      GREMLIN_TRAVERSAL_SOURCE: g
+      HOST: 0.0.0.0
+      PORT: 3000
+    volumes:
+      - ./:/app
+      - /app/node_modules
+    depends_on:
+      - postgres
+      - tinkergraph
+    restart: on-failure
+    command: >
+      sh -c "
+        echo 'Waiting 10s for services...' &&
+        sleep 10 &&
+        yarn start:dev
+      "
+
+  tinkergraph:
+    image: tinkerpop/gremlin-server:3.7.3
+    container_name: tinkergraph
+    ports:
+      - "8182:8182"
+
+  postgres:
+    image: postgres:15-alpine
+    container_name: postgres
+    ports:
+      - "5432:5432"
     environment:
       POSTGRES_USER: postgres
       POSTGRES_PASSWORD: postgres
       POSTGRES_DB: banking
-    ports:
-      - '5432:5432'
     volumes:
-      - pgdata:/var/lib/postgresql/data
-        
-  gremlin-server:
-    image: tinkerpop/gremlin-server:latest
-    platform: linux/amd64
-    container_name: banking_gremlin_server
-    restart: unless-stopped
-    ports:
-      - "${GREMLIN_PORT}:8182"
-    volumes:
-      - ./gremlin-conf:/opt/gremlin-server/conf
-    healthcheck:
-      test: [ "CMD", "curl", "-f", "http://localhost:8182/status" ]
-      interval: 15s
-      timeout: 5s
-      retries: 3
-      start_period: 20s
+      - postgres-data:/var/lib/postgresql/data
 
 volumes:
-  pgdata:
+  postgres-data:

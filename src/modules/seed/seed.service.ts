@@ -1,23 +1,25 @@
-import {Injectable, Logger, OnModuleInit} from '@nestjs/common';
-import {InjectRepository} from '@nestjs/typeorm';
-import {Repository} from 'typeorm';
-import {Person} from '../person/entities/person.entity';
-import {BankTransaction} from '../bank-transaction/entities/bank-transaction.entity';
-import {GremlinService} from '../gremlin/services/gremlin.service';
-import {BankAccount} from "../bank-account/entities/bank-account.entity";
+import { Injectable, Logger, OnModuleInit } from '@nestjs/common';
+import { InjectRepository } from '@nestjs/typeorm';
+import { EntityManager, Repository } from 'typeorm';
+import { Person } from '../person/entities/person.entity';
+import { PersonService } from '../person/person.service';
+import { BankAccountService } from '../bank-account/bank-account.service';
+import { BankTransactionService } from '../bank-transaction/bank-transaction.service';
+import { GremlinService } from '../gremlin/services/gremlin.service';
+import { BankAccount } from '../bank-account/entities/bank-account.entity';
 
 @Injectable()
 export class SeedService implements OnModuleInit {
     private readonly logger = new Logger(SeedService.name);
 
     constructor(
+        private readonly entityManager: EntityManager,
         @InjectRepository(Person)
-        private personRepository: Repository<Person>,
-        @InjectRepository(BankAccount)
-        private bankAccountRepository: Repository<BankAccount>,
-        @InjectRepository(BankTransaction)
-        private transactionRepository: Repository<BankTransaction>,
-        private gremlinService: GremlinService
+        private readonly personRepository: Repository<Person>, // Kept for checkIfSeeded
+        private readonly personService: PersonService,
+        private readonly bankAccountService: BankAccountService,
+        private readonly bankTransactionService: BankTransactionService,
+        private readonly gremlinService: GremlinService,
     ) {}
 
     async onModuleInit() {
@@ -32,166 +34,182 @@ export class SeedService implements OnModuleInit {
     }
 
     async resetAndReseed(): Promise<void> {
-        this.logger.log('Resetting database and reseeding');
+        this.logger.log('--- Resetting Database and Reseeding ---');
         
-        try {
-            await this.gremlinService.clearAll();
-        } catch (error) {
-            this.logger.error('Error clearing Gremlin graph', error);
-        }
+        await this.gremlinService.clearGraph();
 
-        await this.transactionRepository.delete({});
-        await this.bankAccountRepository.delete({});
-        await this.personRepository.delete({});
+        await this.entityManager.query('TRUNCATE TABLE "bank_transactions", "bank_accounts", "persons" RESTART IDENTITY CASCADE');
         
         await this.seed();
         
-        this.logger.log('Database reset and reseeded successfully');
+        this.logger.log('--- Database Reset and Reseed Completed Successfully ---');
     }
 
     async seed() {
         const isSeeded = await this.checkIfSeeded();
         if (isSeeded) {
-            this.logger.log('Database already seeded, skipping');
+            this.logger.log('Database already seeded, skipping.');
             return;
         }
-        
-        const persons = await this.seedPersonsOnly();
-        const accounts = await this.seedBankAccountsOnly(3, persons);
-        await this.seedTransactionsOnly(10);
-        await this.seedFriendshipsOnly(persons);
+
+        this.logger.log('--- Starting Database Seeding ---');
+
+        this.logger.log('Step 1: Seeding persons...');
+        const persons = await this.seedPersons(7);
+        this.logger.log(`Step 1 Complete: Seeded ${persons.length} persons.`);
+
+        this.logger.log('Step 2: Seeding bank accounts and initial deposits...');
+        await this.seedBankAccountsAndDeposits(3, persons);
+        this.logger.log('Step 2 Complete: Bank accounts and deposits seeded.');
+
+        this.logger.log('Step 3: Seeding additional random transactions...');
+        await this.seedRandomTransactions(10);
+        this.logger.log('Step 3 Complete: Additional transactions seeded.');
+
+        this.logger.log('Step 4: Seeding friendships...');
+        await this.seedFriendships(persons);
+        this.logger.log('Step 4 Complete: Friendships seeded.');
+
+        this.logger.log('--- Database Seeding Completed Successfully ---');
     }
 
-    async seedPersonsOnly(count: number = 7): Promise<Person[]> {
+    private async seedPersons(count: number = 7): Promise<Person[]> {
         this.logger.log(`Seeding ${count} persons`);
 
         const names = ['John Doe', 'Jane Smith', 'Alice Johnson', 'Bob Brown', 
                       'Charlie Davis', 'Diana Evans', 'Edward Franklin', 'Fiona Grant',
                       'George Harris', 'Hannah Irving', 'Ian Jackson', 'Julia King'];
         
-        const persons: Person[] = [];
+        const createdPersons: Person[] = [];
 
         for (let i = 0; i < Math.min(count, names.length); i++) {
             const firstName = names[i].split(' ')[0].toLowerCase();
-            const personData = {
-                name: names[i],
-                email: `${firstName}@example.com`,
-                isActive: true
-            };
-
-            const person = this.personRepository.create(personData);
-            const savedPerson = await this.personRepository.save(person);
-            persons.push(savedPerson);
-
-         //   await this.gremlinService.savePerson(savedPerson.id, {
-         //       name: savedPerson.name,
-         //       email: savedPerson.email!
-         //   });
+            const timestamp = Date.now();
+            const randomSuffix = Math.floor(Math.random() * 1000);
+            const email = `${firstName}${timestamp}${randomSuffix}@example.com`;
+            
+            try {
+                const person = await this.personService.create({
+                    name: names[i],
+                    email: email,
+                });
+                createdPersons.push(person);
+                this.logger.debug(`Created person: ${person.name} (${person.id})`);
+            } catch (error) {
+                this.logger.error(`Failed to create person ${names[i]}: ${error.message}`);
+            }
         }
-
-        return persons;
+        return createdPersons;
     }
 
-    async seedBankAccountsOnly(maxAccountsPerPerson: number = 3, specificPersons?: Person[]): Promise<BankAccount[]> {
-        this.logger.log('Seeding bank accounts');
-
-        const persons = specificPersons || await this.personRepository.find();
+    private async seedBankAccountsAndDeposits(maxAccountsPerPerson: number = 3, persons: Person[]): Promise<void> {
         if (persons.length === 0) {
             this.logger.warn('No persons found to create bank accounts for');
-            return [];
+            return;
         }
 
-        const accounts: BankAccount[] = [];
         const bankNames = ['Chase', 'Bank of America', 'Wells Fargo', 'Citibank', 'Capital One'];
+        const ibanPrefixes = ['DE89', 'FR76', 'GB29', 'US12', 'CH93', 'ES91'];
 
         for (const person of persons) {
             const numAccounts = 1 + Math.floor(Math.random() * maxAccountsPerPerson);
 
             for (let i = 0; i < numAccounts; i++) {
                 const randomBank = bankNames[Math.floor(Math.random() * bankNames.length)];
-                const initialBalance = 1000 + Math.floor(Math.random() * 9000);
+                const prefix = ibanPrefixes[Math.floor(Math.random() * ibanPrefixes.length)];
+                const iban = `${prefix}${Math.floor(Math.random() * 10000000000).toString().padStart(10, '0')}`;
 
-                const account = this.bankAccountRepository.create({
-                    iban: `IBAN${Math.random().toString(36).substring(2, 12)}`,
-                    bankName: randomBank,
-                    balance: initialBalance,
-                    person: person
-                });
+                try {
+                    const account = await this.bankAccountService.create({
+                        iban: iban,
+                        bankName: randomBank,
+                        personId: person.id,
+                    });
+                    
+                    const initialBalance = 1000 + Math.floor(Math.random() * 9000);
+                    await this.bankTransactionService.create({
+                        iban: account.iban,
+                        amount: initialBalance,
+                        description: 'Initial deposit',
+                        otherIban: 'SYSTEM'
+                    });
 
-                const savedAccount = await this.bankAccountRepository.save(account);
-                accounts.push(savedAccount);
+                    this.logger.debug(`Created account: ${account.iban} for person ${person.name}`);
+                } catch (error) {
+                    this.logger.error(`Failed to create account for person ${person.name}: ${error.message}`);
+                }
             }
         }
-
-        return accounts;
     }
 
-    async seedTransactionsOnly(maxPerAccount: number = 10): Promise<number> {
-        this.logger.log('Seeding transactions');
-
-        const accounts = await this.bankAccountRepository.find();
+    private async seedRandomTransactions(maxPerAccount: number = 10): Promise<void> {
+        const accounts = await this.bankAccountService.findAll();
         if (accounts.length === 0) {
             this.logger.warn('No bank accounts found to create transactions for');
-            return 0;
+            return;
         }
 
-        let totalTransactions = 0;
         for (const account of accounts) {
             const txCount = 2 + Math.floor(Math.random() * (maxPerAccount - 1));
             await this.createRandomTransactionsForAccount(account, txCount);
-            totalTransactions += txCount;
         }
-
-        return totalTransactions;
     }
 
-    async seedFriendshipsOnly(specificPersons?: Person[]): Promise<number> {
-        this.logger.log('Seeding friendships');
-
-        const persons = specificPersons || await this.personRepository.find();
-        if (persons.length < 2) {
+    private async seedFriendships(persons?: Person[]): Promise<void> {
+        const personList = persons || await this.personService.findAll();
+        if (personList.length < 2) {
             this.logger.warn('Not enough persons found to create friendships');
-            return 0;
+            return;
         }
 
-        let friendshipCount = 0;
-        for (let i = 0; i < persons.length; i++) {
-            const connectionsCount = 1 + Math.floor(Math.random() * 3);
+        for (let i = 0; i < personList.length; i++) {
+            const connectionsCount = 1 + Math.floor(Math.random() * 2);
             
             for (let j = 0; j < connectionsCount; j++) {
                 let friendIndex;
                 do {
-                    friendIndex = Math.floor(Math.random() * persons.length);
+                    friendIndex = Math.floor(Math.random() * personList.length);
                 } while (friendIndex === i);
                 
-                await this.gremlinService.addFriend(persons[i].id, persons[friendIndex].id);
-                friendshipCount++;
+                try {
+                    await this.personService.addFriend(personList[i].id, personList[friendIndex].id);
+                    this.logger.debug(`Created friendship between ${personList[i].name} and ${personList[friendIndex].name}`);
+                } catch (error) {
+                    this.logger.warn(`Could not create friendship: ${error.message}`);
+                }
             }
         }
-
-        return friendshipCount;
     }
+
 
     private async createRandomTransactionsForAccount(account: BankAccount, count: number): Promise<void> {
         const descriptions = [
             'Salary', 'Rent', 'Groceries', 'Utilities',
-            'Restaurant', 'Shopping', 'Transportation'
+            'Restaurant', 'Shopping', 'Transportation', 'Insurance',
+            'Subscription', 'Gift', 'Entertainment', 'Education'
         ];
+        
+        const otherIbanPrefixes = ['DE89', 'FR76', 'GB29', 'US12', 'CH93', 'ES91'];
 
         for (let i = 0; i < count; i++) {
             const isPositive = Math.random() > 0.3;
             const amount = isPositive
                 ? 100 + Math.floor(Math.random() * 900)
                 : -(50 + Math.floor(Math.random() * 450));
-
-            const transaction = this.transactionRepository.create({
-                amount: amount,
-                description: descriptions[Math.floor(Math.random() * descriptions.length)],
-                bankAccount: account,
-                processed_at: new Date(Date.now() - Math.floor(Math.random() * 30) * 24 * 60 * 60 * 1000)
-            });
-
-            await this.transactionRepository.save(transaction);
+                
+            const prefix = otherIbanPrefixes[Math.floor(Math.random() * otherIbanPrefixes.length)];
+            const otherIban = `${prefix}${Math.floor(Math.random() * 10000000000).toString().padStart(10, '0')}`;
+            
+            try {
+                await this.bankTransactionService.create({
+                    iban: account.iban,
+                    amount,
+                    otherIban,
+                    description: descriptions[Math.floor(Math.random() * descriptions.length)],
+                });
+            } catch (error) {
+                this.logger.error(`Failed to create transaction for account ${account.iban}: ${error.message}`);
+            }
         }
     }
 }

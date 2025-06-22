@@ -1,26 +1,69 @@
 import {
-    Entity, PrimaryGeneratedColumn, Column, ManyToOne, In, Index, JoinColumn, CreateDateColumn,
+    Entity, PrimaryGeneratedColumn, Column, ManyToOne, JoinColumn, CreateDateColumn,
 } from 'typeorm';
-import {BankAccount} from "../../bank-account/entities/bank-account.entity";
+import { ApiProperty } from '@nestjs/swagger';
+import { BankAccount } from "../../bank-account/entities/bank-account.entity";
 
-@Entity()
+@Entity('bank_transactions')
 export class BankTransaction {
+    @ApiProperty({
+        description: 'Unique identifier for the transaction',
+        example: '123e4567-e89b-12d3-a456-426614174000'
+    })
     @PrimaryGeneratedColumn('uuid')
     id: string;
 
-    @Column('numeric', {precision: 15, scale: 2})
+    @ApiProperty({
+        description: 'Transaction amount (positive for credit, negative for debit)',
+        example: 120.50
+    })
+    @Column('numeric', { precision: 15, scale: 2 })
     amount: number;
 
-    @Column({nullable: true})
+    @ApiProperty({
+        description: 'IBAN of the other party involved in the transaction',
+        example: 'FR7630006000011234567890189',
+        required: false
+    })
+    @Column({ nullable: true })
+    otherIban?: string;
+
+    @ApiProperty({
+        description: 'Optional description of the transaction',
+        example: 'Monthly salary payment',
+        required: false
+    })
+    @Column({ nullable: true })
     description?: string;
 
-    @ManyToOne(() => BankAccount, (account) => account.transactions, {onDelete: 'CASCADE'})
+    @ApiProperty({
+        description: 'Flag indicating if the transaction has been processed in a balance update',
+        example: false,
+        default: false
+    })
+    @Column({ default: false })
+    processed: boolean;
+
+    @ApiProperty({
+        description: 'Reference to the bank account',
+        type: () => BankAccount
+    })
+    @ManyToOne(() => BankAccount, (account) => account.transactions, { onDelete: 'CASCADE' })
     @JoinColumn({ name: 'iban' })
     bankAccount: BankAccount;
 
+    @ApiProperty({
+        description: 'When the transaction was created',
+        example: '2025-06-22T10:30:00Z'
+    })
     @CreateDateColumn()
     createdAt: Date;
 
+    @ApiProperty({
+        description: 'When the transaction was processed in a balance update',
+        example: '2025-06-22T23:05:30Z',
+        required: false
+    })
     @Column({ type: 'timestamp', nullable: true })
     processed_at: Date;
 }

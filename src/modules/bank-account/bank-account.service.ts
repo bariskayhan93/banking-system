@@ -1,63 +1,69 @@
-import {Injectable, NotFoundException} from '@nestjs/common';
-import {InjectRepository} from '@nestjs/typeorm';
-import {Repository} from 'typeorm';
-import {Person} from '../person/entities/person.entity';
-import {CreateBankAccountDto} from "./dto/create-bank-account.dto";
-import {UpdateBankAccountDto} from "./dto/update-bank-account.dto";
-import {BankAccount} from "./entities/bank-account.entity";
+import { Injectable, Logger, NotFoundException, ConflictException } from '@nestjs/common';
+import { CreateBankAccountDto } from "./dto/create-bank-account.dto";
+import { BankAccount } from "./entities/bank-account.entity";
+import { BankAccountRepository } from './repositories/bank-account.repository';
+import { PersonRepository } from '../person/repositories/person.repository';
 
 @Injectable()
 export class BankAccountService {
+    private readonly logger = new Logger(BankAccountService.name);
+
     constructor(
-        @InjectRepository(BankAccount)
-        private readonly bankRepo: Repository<BankAccount>,
-        @InjectRepository(Person)
-        private readonly personRepo: Repository<Person>,
+        private readonly bankAccountRepository: BankAccountRepository,
+        private readonly personRepository: PersonRepository,
     ) {}
 
-    async create(dto: CreateBankAccountDto) {
-        const person = await this.personRepo.findOneBy({id: dto.personId});
-        if (!person) throw new NotFoundException('Person not found');
-
-        const bankAccount = this.bankRepo.create({
-            iban: dto.iban,
-            bankName: dto.bankName,
-            person,
-        });
-
-        return this.bankRepo.save(bankAccount);
+    /**
+     * Create a new bank account
+     */
+    async create(dto: CreateBankAccountDto): Promise<BankAccount> {
+        this.logger.log(`Creating bank account with IBAN: ${dto.iban}`);
+        
+        // Verify the person exists
+        await this.personRepository.findById(dto.personId);
+        
+        // Check for existing account with the same IBAN
+        const existingAccount = await this.bankAccountRepository.findByIban(dto.iban);
+        if (existingAccount) {
+            throw new ConflictException(`Bank account with IBAN ${dto.iban} already exists.`);
+        }
+        
+        return this.bankAccountRepository.create(dto.personId, dto);
     }
 
-    findAll() {
-        return this.bankRepo.find({relations: ['person']});
+    /**
+     * Get all bank accounts
+     */
+    async findAll(): Promise<BankAccount[]> {
+        return this.bankAccountRepository.findAll();
     }
 
-    async findOne(iban: string) {
-        const account = await this.bankRepo.findOne({
-            where: {iban},
-            relations: ['person'],
-        });
-        if (!account) throw new NotFoundException('BankAccount not found');
+    /**
+     * Get a bank account by IBAN
+     */
+    async findOne(iban: string): Promise<BankAccount> {
+        const account = await this.bankAccountRepository.findByIban(iban);
+        if (!account) {
+            throw new NotFoundException(`Bank account with IBAN ${iban} not found.`);
+        }
         return account;
     }
 
-    async update(iban: string, dto: UpdateBankAccountDto) {
-        const existing = await this.findOne(iban);
-
-        if (dto.personId) {
-            const person = await this.personRepo.findOneBy({id: dto.personId});
-            if (!person) throw new NotFoundException('Person not found');
-            existing.person = person;
-        }
-
-        const { personId, ...updateData } = dto;
-        Object.assign(existing, updateData);
+    /**
+     * Get all bank accounts belonging to a person
+     */
+    async findByPersonId(personId: string): Promise<BankAccount[]> {
+        // Verify the person exists
+        await this.personRepository.findById(personId);
         
-        return this.bankRepo.save(existing);
+        return this.bankAccountRepository.findByPersonId(personId);
     }
 
-    async remove(iban: string) {
-        const existing = await this.findOne(iban);
-        return this.bankRepo.remove(existing);
+    /**
+     * Delete a bank account
+     */
+    async remove(iban: string): Promise<void> {
+        await this.findOne(iban);
+        await this.bankAccountRepository.remove(iban);
     }
 }

@@ -1,69 +1,111 @@
-import {Injectable, NotFoundException} from '@nestjs/common';
-import {InjectRepository} from '@nestjs/typeorm';
-import {Repository} from 'typeorm';
-import {Person} from './entities/person.entity';
-import {CreatePersonDto} from './dto/create-person.dto';
-import {UpdatePersonDto} from './dto/update-person.dto';
-import {GremlinService} from "../gremlin/services/gremlin.service";
+import { Injectable, Logger, BadRequestException, NotFoundException, ConflictException } from '@nestjs/common';
+import { PersonRepository } from './repositories/person.repository';
+import { CreatePersonDto } from './dto/create-person.dto';
+import { UpdatePersonDto } from './dto/update-person.dto';
+import { Person } from './entities/person.entity';
+import { GremlinService } from '../gremlin/services/gremlin.service';
 
 @Injectable()
 export class PersonService {
-    constructor(
-        @InjectRepository(Person)
-        private readonly personRepository: Repository<Person>,
-        private readonly gremlinService: GremlinService,
-    ) {}
+  private readonly logger = new Logger(PersonService.name);
 
-    async create(createPersonDto:CreatePersonDto) {
-        const person: Person = this.personRepository.create(createPersonDto);
-        const savedPerson = await this.personRepository.save(person);
-        
-      //  await this.gremlinService.savePerson(savedPerson.id, {
-      //      name: savedPerson.name,
-      //      email: savedPerson.email!
-      //  });
-        
-        return savedPerson;
+  constructor(
+      private readonly personRepository: PersonRepository,
+      private readonly gremlinService: GremlinService,
+  ) {}
+
+  /**
+   * Create a new person
+   */
+  async create(createPersonDto: CreatePersonDto): Promise<Person> {
+    const emailExists = await this.personRepository.findByEmail(createPersonDto.email);
+    if (emailExists) {
+        throw new ConflictException(`Email ${createPersonDto.email} is already in use.`);
     }
 
-    async update(id: string, data: UpdatePersonDto) {
-        const person = await this.findOne(id);
-        const updatedPerson = Object.assign(person, data);
-        await this.personRepository.update(person.id, updatedPerson);
-        
-      //  await this.gremlinService.savePerson(updatedPerson.id, {
-      //      name: updatedPerson.name,
-      //      email: updatedPerson.email!
-      //  });
-        
-        return updatedPerson;
+    const person = await this.personRepository.create(createPersonDto);
+
+    await this.gremlinService.addPersonVertex(person.id, person.name, person.email);
+
+    return person;
+  }
+
+  /**
+   * Find all persons
+   */
+  async findAll(): Promise<Person[]> {
+    return this.personRepository.findAll();
+  }
+
+  /**
+   * Find person by ID
+   */
+  async findOne(id: string): Promise<Person> {
+    return this.personRepository.findById(id);
+  }
+
+  /**
+   * Update person data
+   */
+  async update(id: string, updatePersonDto: UpdatePersonDto): Promise<Person> {
+    await this.personRepository.findById(id);
+
+    if (updatePersonDto.email) {
+        const personByEmail = await this.personRepository.findByEmail(updatePersonDto.email);
+        if (personByEmail && personByEmail.id !== id) {
+            throw new ConflictException(`Email ${updatePersonDto.email} is already in use.`);
+        }
     }
 
-    async remove(id: string) {
-        const person = await this.findOne(id);
-      //  await this.gremlinService.deletePerson(person.id);
-        return this.personRepository.remove(person);
-    }
+    const updatedPerson = await this.personRepository.update(id, updatePersonDto);
 
-    async makeFriends(person1Id: string, person2Id: string) {
-        await this.gremlinService.getPerson(person1Id);
-        await this.gremlinService.getPerson(person2Id);
+    await this.gremlinService.updatePersonVertex(id, updatePersonDto);
 
-        await this.gremlinService.addFriend(person1Id, person2Id);
-        return { message: `Friendship created between ${person1Id} and ${person2Id}` };
-    }
+    return updatedPerson;
+  }
+
+  /**
+   * Delete a person
+   */
+  async remove(id: string): Promise<void> {
+    await this.personRepository.findById(id);
     
-    async getFriends(personId: string) {
-        return this.gremlinService.getFriends(personId);
-    }
-    
-    findAll() {
-        return this.personRepository.find();
+    await this.personRepository.remove(id);
+
+    await this.gremlinService.removePersonVertex(id);
+  }
+
+  /**
+   * Create friendship between two persons
+   */
+  async addFriend(personId: string, friendId: string): Promise<void> {
+    if (personId === friendId) {
+        throw new BadRequestException('A person cannot be friends with themselves.');
     }
 
-    async findOne(id: string) {
-        const person = await this.personRepository.findOneBy({id});
-        if (!person) throw new NotFoundException('Person not found');
-        return person;
+    await this.personRepository.findById(personId);
+    await this.personRepository.findById(friendId);
+
+    const friendshipExists = await this.gremlinService.friendshipExists(personId, friendId);
+    if (friendshipExists) {
+        throw new ConflictException('Friendship already exists.');
     }
+
+    await this.gremlinService.addFriendshipEdge(personId, friendId);
+  }
+
+  /**
+   * Get all friends of a person
+   */
+  async getFriends(personId: string): Promise<Person[]> {
+    await this.personRepository.findById(personId);
+
+    const friendIds = await this.gremlinService.findFriendIds(personId);
+
+    if (friendIds.length === 0) {
+        return [];
+    }
+
+    return this.personRepository.findByIds(friendIds);
+  }
 }

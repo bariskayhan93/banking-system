@@ -1,83 +1,167 @@
-import {Injectable} from "@nestjs/common";
-import {DataSource} from "typeorm";
-import {Person} from "../person/entities/person.entity";
-import {Friendship} from "../person/entities/friendship.entity";
-import {LoanPotential} from "./dto/loan-potential.dto";
-import {BankAccount} from "../bank-account/entities/bank-account.entity";
+import { Injectable, Logger, NotFoundException } from '@nestjs/common';
+import { BankProcessRepository } from './repositories/bank-process.repository';
+import { GremlinService } from '../gremlin/services/gremlin.service';
+import { PersonRepository } from '../person/repositories/person.repository';
+import { LoanPotentialDto } from './dto/loan-potential.dto';
 
 @Injectable()
 export class BankProcessService {
-    constructor(private readonly dataSource: DataSource) {}
+    private readonly logger = new Logger(BankProcessService.name);
 
-    async handleProcess(processId: number) {
-        if (processId >= 1) await this.updateAccountBalances();
-        if (processId >= 2) await this.updatePersonNetWorths();
-        if (processId >= 3) return this.calculateLoanPotentials();
-    }
+    constructor(
+        private readonly bankProcessRepo: BankProcessRepository,
+        private readonly personRepo: PersonRepository,
+        private readonly gremlinService: GremlinService,
+    ) {}
 
-    private async updateAccountBalances() {
-        const accountRepo = this.dataSource.getRepository(BankAccount);
-        const accounts = await accountRepo
-            .createQueryBuilder('account')
-            .leftJoinAndSelect('account.transactions', 'tx')
-            .getMany();
+    /**
+     * Process 1: Update account balances based on unprocessed transactions
+     */
+    async updateAccountBalances(): Promise<Map<string, number>> {
+        this.logger.log('Starting Process 1: Update account balances');
+        const accounts = await this.bankProcessRepo.findAccountsWithUnprocessedTransactions();
+        if (accounts.length === 0) {
+            this.logger.log('No accounts with unprocessed transactions found.');
+            return new Map();
+        }
+
+        const balanceUpdates = new Map<string, number>();
+        const processedTransactionIds: string[] = [];
 
         for (const account of accounts) {
-            const balance = account.transactions.reduce(
+            const newBalance = account.transactions.reduce(
                 (sum, tx) => sum + Number(tx.amount),
-                0,
+                Number(account.balance),
             );
-            await accountRepo.update(account.iban, {balance});
+            balanceUpdates.set(account.iban, newBalance);
+            account.transactions.forEach(tx => processedTransactionIds.push(tx.id));
         }
 
-        console.log('Updated account balances.');
+        await this.bankProcessRepo.updateAccountBalances(balanceUpdates);
+        await this.bankProcessRepo.markTransactionsAsProcessed(processedTransactionIds);
+
+        this.logger.log(`Process 1 completed: Updated ${balanceUpdates.size} accounts.`);
+        return balanceUpdates;
     }
 
-    private async updatePersonNetWorths() {
-        const personRepo = this.dataSource.getRepository(Person);
-        const people = await personRepo
-            .createQueryBuilder('person')
-            .leftJoinAndSelect('person.bankAccounts', 'account')
-            .getMany();
-
-        for (const person of people) {
-            const netWorth = person.bankAccounts.reduce(
-                (sum, acc) => sum + Number(acc.balance),
-                0,
-            );
-            await personRepo.update(person.id, {netWorth});
-        }
-
-        console.log('Updated person net worths.');
+    /**
+     * Process 2: Calculate net worths for all persons
+     */
+    async calculateNetWorths(): Promise<Map<string, number>> {
+        this.logger.log('Starting Process 2: Calculate net worths');
+        const personsWithNetWorth = await this.bankProcessRepo.getAllPersonsWithNetWorth();
+        const netWorthMap = new Map<string, number>();
+        personsWithNetWorth.forEach(p => {
+            netWorthMap.set(p.person.id, p.netWorth);
+        });
+        this.logger.log(`Process 2 completed: Calculated net worth for ${netWorthMap.size} persons.`);
+        return netWorthMap;
     }
 
-    private async calculateLoanPotentials(): Promise<LoanPotential[]> {
-        const personRepo = this.dataSource.getRepository(Person);
-        const friendshipRepo = this.dataSource.getRepository(Friendship);
+    /**
+     * Process 3: Calculate loan potentials for all persons
+     */
+    async calculateLoanPotentials(): Promise<LoanPotentialDto[]> {
+        this.logger.log('Starting Process 3: Calculate loan potentials');
+        const personsWithNetWorth = await this.bankProcessRepo.getAllPersonsWithNetWorth();
+        const loanPotentials: LoanPotentialDto[] = [];
 
-        const people = await personRepo.find();
-        const friendships = await friendshipRepo
-            .createQueryBuilder('f')
-            .leftJoinAndSelect('f.person', 'p')
-            .leftJoinAndSelect('f.friend', 'friend')
-            .getMany();
+        for (const { person, netWorth } of personsWithNetWorth) {
+            const friendIds = await this.gremlinService.findFriendIds(person.id);
+            if (friendIds.length === 0) {
+                loanPotentials.push({ personId: person.id, maxLoanAmount: 0 });
+                continue;
+            }
 
-        const result: LoanPotential[] = [];
+            const friendsNetWorthMap = await this.bankProcessRepo.getNetWorthForPersons(friendIds);
+            let maxLoanAmount = 0;
+            for (const friendId of friendIds) {
+                const friendNetWorth = friendsNetWorthMap.get(friendId) || 0;
+                if (friendNetWorth > netWorth) {
+                    maxLoanAmount += (friendNetWorth - netWorth);
+                }
+            }
+            loanPotentials.push({ personId: person.id, maxLoanAmount: Number(maxLoanAmount.toFixed(2)) });
+        }
+        this.logger.log(`Process 3 completed: Calculated loan potentials for ${loanPotentials.length} persons.`);
+        return loanPotentials;
+    }
 
-        for (const person of people) {
-            const friends = friendships
-                .filter(f => f.person.id === person.id)
-                .map(f => f.friend);
-
-            const maxLoanAmount = friends.reduce((sum, friend) => {
-                const diff = Number(friend.netWorth) - Number(person.netWorth);
-                return diff > 0 ? sum + diff : sum;
-            }, 0);
-
-            result.push({personId: person.id, maxLoanAmount});
+    /**
+     * Calculate loan potential for a specific person
+     */
+    async getLoanPotentialForPerson(personId: string): Promise<LoanPotentialDto> {
+        this.logger.log(`Calculating loan potential for person: ${personId}`);
+        const person = await this.personRepo.findById(personId);
+        if (!person) {
+            throw new NotFoundException(`Person with ID ${personId} not found`);
         }
 
-        console.log('Calculated loan potentials.');
-        return result;
+        const netWorthMap = await this.bankProcessRepo.getNetWorthForPersons([personId]);
+        const personNetWorth = netWorthMap.get(personId) || 0;
+
+        const friendIds = await this.gremlinService.findFriendIds(personId);
+        if (friendIds.length === 0) {
+            return { personId, maxLoanAmount: 0 };
+        }
+
+        const friendsNetWorthMap = await this.bankProcessRepo.getNetWorthForPersons(friendIds);
+        let maxLoanAmount = 0;
+        for (const friendId of friendIds) {
+            const friendNetWorth = friendsNetWorthMap.get(friendId) || 0;
+            if (friendNetWorth > personNetWorth) {
+                maxLoanAmount += (friendNetWorth - personNetWorth);
+            }
+        }
+
+        return { personId, maxLoanAmount: Number(maxLoanAmount.toFixed(2)) };
+    }
+
+    /**
+     * Handle a process request based on the processId
+     * Process 1: Update account balances
+     * Process 2: Calculate net worths (runs Process 1 first)
+     * Process 3: Calculate loan potentials (runs Process 2 first)
+     */
+    async handleProcess(processId: number): Promise<any> {
+        this.logger.log(`Handling process request with processId: ${processId}`);
+        const results = {};
+
+        // Process 1: Update account balances
+        if (processId >= 1) {
+            const balanceMap = await this.updateAccountBalances();
+            results['process1'] = {
+                name: 'Account Balance Updates',
+                updatedAccounts: balanceMap.size,
+                completed: true,
+            };
+        }
+
+        // Process 2: Calculate net worths
+        if (processId >= 2) {
+            const netWorthMap = await this.calculateNetWorths();
+            results['process2'] = {
+                name: 'Net Worth Calculations',
+                personsCalculated: netWorthMap.size,
+                completed: true,
+            };
+        }
+
+        // Process 3: Calculate loan potentials
+        if (processId >= 3) {
+            const loanPotentials = await this.calculateLoanPotentials();
+            results['process3'] = {
+                name: 'Loan Potential Calculations',
+                potentialsCalculated: loanPotentials.length,
+                loanPotentials,
+                completed: true,
+            };
+            // If only process 3 was requested, just return the loan potentials
+            if (processId === 3 && !results['process1'] && !results['process2']) {
+                return loanPotentials;
+            }
+        }
+
+        return results;
     }
 }

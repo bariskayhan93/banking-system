@@ -1,71 +1,118 @@
-import {Injectable, OnModuleInit, OnModuleDestroy, Logger, NotFoundException} from '@nestjs/common';
-import {process as gprocess, driver} from 'gremlin';
-import {PersonDto} from '../../person/dto/person.dto';
+import {Injectable, Logger, OnModuleInit, OnModuleDestroy} from '@nestjs/common';
+import {ConfigService} from '@nestjs/config';
+import * as gremlin from 'gremlin';
+import {GraphEdge, GraphLabel} from '../interfaces/gremlin.interface';
 
 @Injectable()
 export class GremlinService implements OnModuleInit, OnModuleDestroy {
-  private logger = new Logger(GremlinService.name);
-  private client: driver.Client;
-  public g: gprocess.GraphTraversalSource;
+    private client: gremlin.driver.Client;
+    private readonly logger = new Logger(GremlinService.name);
 
-  async onModuleInit() {
-    const url = process.env.GREMLIN_REMOTE_URL || 'ws://localhost:8182/gremlin';
-    this.client = new driver.Client(url, { traversalSource: 'g' });
-    
-    try {
-      await this.client.open();
-      this.g = gprocess.traversal().withRemote(new driver.DriverRemoteConnection(url));
-      this.logger.log(`Connected to Gremlin Server at ${url}`);
-    } catch (error) {
-      this.logger.error(`Connection failed: ${error.message}`);
-      throw error;
+    constructor(private configService: ConfigService) {
     }
-  }
 
-  async onModuleDestroy() {
-    if (this.client) await this.client.close().catch(e => this.logger.error(e));
-  }
+    async onModuleInit(): Promise<void> {
+        const host = this.configService.get<string>('GREMLIN_HOST');
+        const port = this.configService.get<number>('GREMLIN_PORT');
+        const traversalSource = this.configService.get<string>('GREMLIN_TRAVERSAL_SOURCE', 'g');
 
-  async getPerson(id: string): Promise<Record<string, any>> {
-    const vertex = await this.g.V(id).valueMap(true).next();
-    if (!vertex.value) throw new NotFoundException(`Person ${id} not found`);
-    return vertex.value;
-  }
+        const url = `ws://${host}:${port}/gremlin`;
+        this.logger.log(`Connecting to Gremlin server at ${url}`);
 
-  async savePerson(id: string, { name, email }: { name: string; email: string }): Promise<void> {
-    await (await this.g.V(id).hasNext() 
-      ? this.g.V(id).property('name', name).property('email', email)
-      : this.g.addV('person').property(gprocess.t.id, id).property('name', name).property('email', email)
-    ).next();
-  }
+        this.client = new gremlin.driver.Client(url, {
+            traversalSource,
+            rejectUnauthorized: false,
+        });
 
-  async deletePerson(id: string): Promise<void> {
-    if (!await this.g.V(id).hasNext()) throw new NotFoundException(`Person ${id} not found`);
-    await this.g.V(id).drop().iterate();
-  }
-
-  // Edge operations
-  async addFriend(a: string, b: string): Promise<void> {
-    if (a === b) return;
-    if (!await this.g.V(a).bothE('has_friend').where(gprocess.statics.otherV().hasId(b)).hasNext()) {
-      await this.g.V(a).addE('has_friend').to(gprocess.statics.V(b)).next();
+        try {
+            await this.client.open();
+            this.logger.log('Successfully connected to Gremlin server');
+        } catch (error) {
+            this.logger.error(`Failed to connect to Gremlin server: ${error.message}`);
+        }
     }
-  }
 
-  async removeFriend(a: string, b: string): Promise<void> {
-    await this.g.V(a).bothE('has_friend').where(gprocess.statics.otherV().hasId(b)).drop().iterate();
-  }
+    async onModuleDestroy() {
+        if (this.client) {
+            await this.client.close();
+            this.logger.log('Disconnected from Gremlin server');
+        }
+    }
 
-  async getFriends(id: string): Promise<PersonDto[]> {
-    const friends = await this.g.V(id).both('has_friend').valueMap(true).toList();
-    return friends.map((f:any) => ({
-      id: f.id?.toString(),
-      name: f.name?.[0]?.toString() || '',
-      email: f.email?.[0]?.toString()
-    }));
-  }
+    async executeQuery<T = any>(query: string, bindings: Record<string, any> = {}): Promise<T[]> {
+        if (!this.client) {
+            this.logger.error('Gremlin client is not connected.');
+            throw new Error('Gremlin client not available');
+        }
+        try {
+            const result = await this.client.submit(query, bindings);
+            return result._items;
+        } catch (error) {
+            this.logger.error(`Query failed: ${error.message}`, `Query: ${query}`);
+            throw error;
+        }
+    }
 
-  async clearAll(): Promise<void> {
-    await this.g.V().drop().iterate();
-  }
+    async addPersonVertex(id: string, name: string, email: string): Promise<void> {
+        const query = "g.addV(personLabel).property('id', personId).property('name', personName).property('email', personEmail)";
+        await this.executeQuery(query, {
+            personLabel: GraphLabel.PERSON,
+            personId: id,
+            personName: name,
+            personEmail: email
+        });
+    }
+
+    async updatePersonVertex(id: string, properties: { name?: string; email?: string }): Promise<void> {
+        if (Object.keys(properties).length === 0) {
+            return;
+        }
+        let query = "g.V().has('person', 'id', personId)";
+        const bindings: Record<string, any> = {personId: id};
+
+        Object.entries(properties).forEach(([key, value]) => {
+            if (value !== undefined) {
+                const bindingKey = `val_${key}`;
+                query += `.property('${key}', ${bindingKey})`;
+                bindings[bindingKey] = value;
+            }
+        });
+
+        await this.executeQuery(query, bindings);
+    }
+
+    async removePersonVertex(personId: string): Promise<void> {
+        const query = "g.V().has('person', 'id', personId).drop()";
+        await this.executeQuery(query, {personId});
+    }
+
+    async friendshipExists(personId: string, friendId: string): Promise<boolean> {
+        const query = "g.V().has('person', 'id', personId).out('has_friend').has('id', friendId).count()";
+        const result = await this.executeQuery<number>(query, {personId, friendId});
+        return result.length > 0 && result[0] > 0;
+    }
+
+    async addFriendshipEdge(personId: string, friendId: string): Promise<void> {
+        const addEdgeQuery = `
+            g.V().has('person', 'id', fromId).as('a').
+              V().has('person', 'id', toId).
+              coalesce(
+                inE('has_friend').where(outV().has('id', fromId)),
+                addE('has_friend').from('a')
+              )
+        `;
+
+        await this.executeQuery(addEdgeQuery, {fromId: personId, toId: friendId});
+        await this.executeQuery(addEdgeQuery, {fromId: friendId, toId: personId});
+    }
+
+    async findFriendIds(personId: string): Promise<string[]> {
+        const query = "g.V().has('person', 'id', personId).out('has_friend').values('id')";
+        return this.executeQuery<string>(query, {personId});
+    }
+
+    async clearGraph(): Promise<void> {
+        this.logger.warn('Clearing all data from the graph database');
+        await this.executeQuery('g.V().drop()');
+    }
 }
