@@ -2,13 +2,13 @@ import { HttpAdapterHost, NestFactory } from '@nestjs/core';
 import { SwaggerModule, DocumentBuilder } from '@nestjs/swagger';
 import { ValidationPipe } from '@nestjs/common';
 import { AppModule } from './app.module';
-import { AllExceptionsFilter } from './all-exceptions.filter';
+import { GlobalExceptionFilter } from './common/filters/global-exception.filter';
 
 async function bootstrap() {
   const app = await NestFactory.create(AppModule);
 
   const httpAdapterHost = app.get(HttpAdapterHost);
-  app.useGlobalFilters(new AllExceptionsFilter(httpAdapterHost));
+  app.useGlobalFilters(new GlobalExceptionFilter(httpAdapterHost));
 
   // Add validation pipe with detailed error messages for better API testing
   app.useGlobalPipes(
