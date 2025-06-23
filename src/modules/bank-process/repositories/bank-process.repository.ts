@@ -31,14 +31,11 @@ export class BankProcessRepository {
     await this.entityManager.transaction(async (transactionalEntityManager) => {
       await transactionalEntityManager.query(`
         UPDATE persons
-        SET "netWorth" = sub.total_balance
-        FROM (
-          SELECT p.id, SUM(ba.balance) as total_balance
-          FROM persons p
-          JOIN bank_accounts ba ON p.id = ba.person_id
-          GROUP BY p.id
-        ) AS sub
-        WHERE persons.id = sub.id;
+        SET "netWorth" = COALESCE((
+          SELECT SUM(balance)
+          FROM bank_accounts
+          WHERE person_id = persons.id
+        ), 0);
       `);
     });
   }

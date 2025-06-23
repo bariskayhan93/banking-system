@@ -28,6 +28,9 @@ export class BankProcessService {
     }
 
     async getLoanPotentialForPerson(personId: string): Promise<LoanPotentialDto> {
+        this.logger.log(`Refreshing data for person: ${personId}`);
+        await this.runProcesses(2);
+
         this.logger.log(`Calculating loan potential for person: ${personId}`);
         const person = await this.personRepo.findById(personId);
         const friendIds = await this.gremlinService.findFriendIds(personId);
@@ -73,7 +76,7 @@ export class BankProcessService {
 
     private calculateLoanAmount(person: Person, friends: Person[]): number {
         return friends.reduce((total, friend) => {
-            if (friend.netWorth > person.netWorth) {
+            if (Number(friend.netWorth) > Number(person.netWorth)) {
                 total += Number(friend.netWorth) - Number(person.netWorth);
             }
             return total;
