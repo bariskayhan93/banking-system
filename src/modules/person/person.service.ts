@@ -99,13 +99,10 @@ export class PersonService {
    */
   async getFriends(personId: string): Promise<Person[]> {
     await this.personRepository.findById(personId);
-
     const friendIds = await this.gremlinService.findFriendIds(personId);
-
     if (friendIds.length === 0) {
         return [];
     }
-
     return this.personRepository.findByIds(friendIds);
   }
 }

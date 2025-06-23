@@ -1,6 +1,6 @@
-import { ApiProperty } from '@nestjs/swagger';
-import { BankTransaction } from '../entities/bank-transaction.entity';
-import { BankAccountResponseDto } from '../../bank-account/dto/bank-account-response.dto';
+import {ApiProperty} from '@nestjs/swagger';
+import {BankTransaction} from '../entities/bank-transaction.entity';
+import {BankAccountResponseDto} from '../../bank-account/dto/bank-account-response.dto';
 
 export class BankTransactionResponseDto {
     @ApiProperty({
@@ -34,17 +34,16 @@ export class BankTransactionResponseDto {
     createdAt: Date;
 
     @ApiProperty({
+        description: 'The timestamp when the transaction was last updated',
+        example: '2025-06-24T02:00:00.000Z',
+    })
+    updatedAt: Date;
+
+    @ApiProperty({
         description: 'Indicates if the transaction has been processed and included in the account balance',
         example: false,
     })
     processed: boolean;
-
-    @ApiProperty({
-        description: 'The timestamp when the transaction was processed',
-        example: '2025-06-24T02:00:00.000Z',
-        nullable: true,
-    })
-    processed_at: Date | null;
 
     @ApiProperty({
         description: 'The bank account this transaction belongs to',
@@ -59,10 +58,9 @@ export class BankTransactionResponseDto {
         this.otherIban = transaction.otherIban!;
         this.createdAt = transaction.createdAt;
         this.processed = transaction.processed;
-        this.processed_at = transaction.processed_at;
+        this.updatedAt = transaction.updatedAt;
         if (transaction.bankAccount) {
             this.bankAccount = new BankAccountResponseDto(transaction.bankAccount);
         }
     }
 }
-

@@ -1,4 +1,4 @@
-import { Entity, Column, ManyToOne, OneToMany, PrimaryColumn, JoinColumn } from 'typeorm';
+import { Entity, Column, ManyToOne, OneToMany, PrimaryColumn, JoinColumn, CreateDateColumn, UpdateDateColumn } from 'typeorm';
 import { ApiProperty } from '@nestjs/swagger';
 import { Person } from "../../person/entities/person.entity";
 import { BankTransaction } from "../../bank-transaction/entities/bank-transaction.entity";
@@ -36,4 +36,10 @@ export class BankAccount {
     })
     @OneToMany(() => BankTransaction, (tx) => tx.bankAccount, { cascade: true })
     transactions: BankTransaction[];
+
+    @CreateDateColumn({ type: 'timestamptz', default: () => 'CURRENT_TIMESTAMP' })
+    createdAt: Date;
+
+    @UpdateDateColumn({ type: 'timestamptz', default: () => 'CURRENT_TIMESTAMP', onUpdate: 'CURRENT_TIMESTAMP' })
+    updatedAt: Date;
 }

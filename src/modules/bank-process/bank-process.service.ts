@@ -3,6 +3,7 @@ import { BankProcessRepository } from './repositories/bank-process.repository';
 import { GremlinService } from '../gremlin/services/gremlin.service';
 import { PersonRepository } from '../person/repositories/person.repository';
 import { LoanPotentialDto } from './dto/loan-potential.dto';
+import { Person } from '../person/entities/person.entity';
 
 @Injectable()
 export class BankProcessService {
@@ -28,41 +29,54 @@ export class BankProcessService {
 
     async getLoanPotentialForPerson(personId: string): Promise<LoanPotentialDto> {
         this.logger.log(`Calculating loan potential for person: ${personId}`);
-        const person = await this.personRepo.findById(personId, ['bankAccounts']);
+        const person = await this.personRepo.findById(personId);
         const friendIds = await this.gremlinService.findFriendIds(personId);
+        const friends = friendIds.length > 0 ? await this.personRepo.findByIds(friendIds) : [];
 
-        if (friendIds.length === 0) {
-            return { personId, maxLoanAmount: 0 };
-        }
-
-        const friends = await this.personRepo.findByIds(friendIds);
-        const maxLoanAmount = friends.reduce((total, friend) => {
-            if (friend.netWorth > person.netWorth) {
-                total += Number(friend.netWorth) - Number(person.netWorth);
-            }
-            return total;
-        }, 0);
+        const maxLoanAmount = this.calculateLoanAmount(person, friends);
 
         return { personId, maxLoanAmount: Number(maxLoanAmount.toFixed(2)) };
     }
 
     async handleProcess(processId: number): Promise<any> {
         this.logger.log(`Handling process request with processId: ${processId}`);
-        
-        if (processId >= 1) {
+        await this.runProcesses(processId);
+        return { message: `Processes up to ${processId} completed successfully.` };
+    }
+
+    private async runProcesses(maxProcessId: number): Promise<void> {
+        if (maxProcessId >= 1) {
             await this.updateAccountBalances();
         }
-
-        if (processId >= 2) {
+        if (maxProcessId >= 2) {
             await this.calculateNetWorths();
         }
-
-        if (processId >= 3) {
-            // This is a placeholder. In a real scenario, you might want to 
-            // calculate and store loan potentials for all users.
-            this.logger.log('Process 3 completed: Loan potential calculation would run here.');
+        if (maxProcessId >= 3) {
+            await this.calculateAndStoreLoanPotentials();
         }
+    }
 
-        return { message: `Processes up to ${processId} completed successfully.` };
+    private async calculateAndStoreLoanPotentials(): Promise<void> {
+        this.logger.log('Starting Process 3: Calculating and storing loan potentials');
+        const allPersons = await this.personRepo.findAll();
+        
+        for (const person of allPersons) {
+            const friendIds = await this.gremlinService.findFriendIds(person.id);
+            const friends = friendIds.length > 0 ? await this.personRepo.findByIds(friendIds) : [];
+            const loanAmount = this.calculateLoanAmount(person, friends);
+            // Here you would typically store the result, for now, we just log it.
+            this.logger.log(`Loan potential for ${person.name}: ${loanAmount}`);
+        }
+        
+        this.logger.log('Process 3 completed');
+    }
+
+    private calculateLoanAmount(person: Person, friends: Person[]): number {
+        return friends.reduce((total, friend) => {
+            if (friend.netWorth > person.netWorth) {
+                total += Number(friend.netWorth) - Number(person.netWorth);
+            }
+            return total;
+        }, 0);
     }
 }

@@ -1,5 +1,5 @@
 import {
-    Entity, PrimaryGeneratedColumn, Column, ManyToOne, JoinColumn, CreateDateColumn,
+    Entity, PrimaryGeneratedColumn, Column, ManyToOne, JoinColumn, CreateDateColumn, UpdateDateColumn,
 } from 'typeorm';
 import { ApiProperty } from '@nestjs/swagger';
 import { BankAccount } from "../../bank-account/entities/bank-account.entity";
@@ -56,14 +56,13 @@ export class BankTransaction {
         description: 'When the transaction was created',
         example: '2025-06-22T10:30:00Z'
     })
-    @CreateDateColumn()
+    @CreateDateColumn({ type: 'timestamptz', default: () => 'CURRENT_TIMESTAMP' })
     createdAt: Date;
 
     @ApiProperty({
-        description: 'When the transaction was processed in a balance update',
-        example: '2025-06-22T23:05:30Z',
-        required: false
+        description: 'When the transaction was last updated',
+        example: '2025-06-22T23:05:30Z'
     })
-    @Column({ type: 'timestamp', nullable: true })
-    processed_at: Date;
+    @UpdateDateColumn({ type: 'timestamptz', default: () => 'CURRENT_TIMESTAMP', onUpdate: 'CURRENT_TIMESTAMP' })
+    updatedAt: Date;
 }
