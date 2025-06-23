@@ -17,13 +17,12 @@ export class BankAccountRepository {
   /**
    * Create a new bank account
    */
-  async create(personId: string, createDto: CreateBankAccountDto): Promise<BankAccount> {
-    this.logger.log(`Creating bank account ${createDto.iban} for person ${personId}`);
+  async create(person: Person, dto: CreateBankAccountDto): Promise<BankAccount> {
+    this.logger.log(`Creating bank account ${dto.iban} for person ${person.id}`);
 
     const bankAccount = this.typeormRepo.create({
-      ...createDto,
-      balance: 0, // Initial balance is 0
-      person: { id: personId } as Person,
+      ...dto,
+      person,
     });
     return this.typeormRepo.save(bankAccount);
   }

@@ -19,8 +19,7 @@ export class BankAccountService {
     async create(dto: CreateBankAccountDto): Promise<BankAccount> {
         this.logger.log(`Creating bank account with IBAN: ${dto.iban}`);
         
-        // Verify the person exists
-        await this.personRepository.findById(dto.personId);
+        const person = await this.personRepository.findById(dto.personId);
         
         // Check for existing account with the same IBAN
         const existingAccount = await this.bankAccountRepository.findByIban(dto.iban);
@@ -28,7 +27,7 @@ export class BankAccountService {
             throw new ConflictException(`Bank account with IBAN ${dto.iban} already exists.`);
         }
         
-        return this.bankAccountRepository.create(dto.personId, dto);
+        return this.bankAccountRepository.create(person, dto);
     }
 
     /**

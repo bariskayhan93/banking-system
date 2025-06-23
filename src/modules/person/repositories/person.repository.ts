@@ -27,8 +27,8 @@ export class PersonRepository {
         return this.personRepo.find();
     }
 
-    async findById(id: string): Promise<Person> {
-        const person = await this.personRepo.findOne({ where: { id } });
+    async findById(id: string, relations: string[] = []): Promise<Person> {
+        const person = await this.personRepo.findOne({ where: { id }, relations });
         if (!person) {
             this.logger.warn(`Person with ID ${id} not found`);
             throw new NotFoundException(`Person with ID ${id} not found`);

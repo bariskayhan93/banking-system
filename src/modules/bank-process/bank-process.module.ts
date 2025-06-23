@@ -3,24 +3,21 @@ import {TypeOrmModule} from '@nestjs/typeorm';
 import {BankProcessController} from './bank-process.controller';
 import {BankProcessService} from './bank-process.service';
 import {BankProcessRepository} from './repositories/bank-process.repository';
-import {GremlinModule} from '../gremlin/gremlin.module';
+import {PersonRepository} from '../person/repositories/person.repository';
 import {Person} from '../person/entities/person.entity';
-import {BankAccount} from '../bank-account/entities/bank-account.entity';
-import {BankTransaction} from '../bank-transaction/entities/bank-transaction.entity';
-import {PersonRepository} from "../person/repositories/person.repository";
+import {GremlinService} from '../gremlin/services/gremlin.service';
+import {ConfigService} from '@nestjs/config';
 
 @Module({
-    imports: [
-        TypeOrmModule.forFeature([Person, BankAccount, BankTransaction]),
-        GremlinModule
-    ],
+    imports: [TypeOrmModule.forFeature([Person])],
     controllers: [BankProcessController],
     providers: [
         BankProcessService,
         BankProcessRepository,
-        PersonRepository
+        PersonRepository,
+        GremlinService,
+        ConfigService,
     ],
-    exports: [BankProcessService]
 })
 export class BankProcessModule {
 }
