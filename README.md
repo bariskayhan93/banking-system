@@ -1,72 +1,79 @@
-# Banking System
+# Banking System API
 
-A concise backend application to handle banking data and related processes.
+A backend service for processing banking information, featuring a modular architecture with NestJS, TypeORM for data persistence, and Gremlin for graph-based relationship management.
+
+---
+
+## Core Concepts
+
+- **Data Persistence**: Utilizes a PostgreSQL database managed by TypeORM, employing the repository pattern for clean data access.
+- **Graph Relationships**: Manages complex, bidirectional "friend" relationships through an Apache TinkerPop Gremlin graph database, isolating graph logic from the primary data store.
+- **Modular Design**: The application is structured into distinct feature modules (e.g., `Person`, `BankAccount`, `BankProcess`) to ensure separation of concerns and maintainability.
+
+---
 
 ## Features
-- Processes daily bank transactions to update balances and net worth.
-- Provides APIs to query user, account, and friend-based lending information.
 
-## Installation
-1. Clone this repository:
-   ```bash
-   git clone https://github.com/bariskayhan93/banking-system.git
-   ```
-2. Install dependencies:
-   ```bash
-   yarn install
-   ```
-3. Start the application:
-   ```bash
-   yarn start:dev
-   ```
+- **RESTful APIs**: Provides comprehensive and documented endpoints for managing Persons, Bank Accounts, and Transactions.
+- **Sequential Batch Processing**: A webhook-driven system to execute financial calculations in a dependent sequence:
+  1.  **Update Balances**: Ingests new transactions to update account totals.
+  2.  **Calculate Net Worth**: Aggregates account balances to determine a person's net worth.
+  3.  **Calculate Loan Potential**: Determines borrowing capacity based on the net worth of a person's friends.
+- **Database Seeding**: A dedicated endpoint to populate the database with mock data for development and testing.
+- **API Documentation**: Leverages OpenAPI (Swagger) for interactive API documentation and testing.
 
-## Usage
-- Access Swagger UI at: <http://localhost:3000/api> (adjust port if necessary).
-- Make requests to the available endpoints (e.g., process daily transactions, retrieve account details, calculate lending limits) as documented.
+---
 
-## Testing with Swagger UI
+## Tech Stack
 
-The application provides a comprehensive Swagger UI interface for testing all API endpoints.
+- **Framework**: NestJS
+- **ORM**: TypeORM
+- **Databases**: PostgreSQL, Gremlin
+- **Containerization**: Docker, Docker Compose
+- **Package Manager**: Yarn
 
-### Getting Started
+---
 
-1. Start the application using `yarn start:dev`
-2. Navigate to <http://localhost:3000/api> in your browser
-3. You'll see the complete API documentation organized by modules:
-   - Persons
-   - Bank Accounts
-   - Bank Transactions
-   - Processes
-   - Seed
+## Local Development
 
-### Testing Flow
+### Prerequisites
 
-For a complete testing experience, follow these steps:
+- Docker Engine
+- Docker Compose
 
-1. **Seed Test Data**: 
-   - Expand the "Seed" section
-   - Execute the `POST /seed/all` endpoint to populate the database with test data
-   - You can verify seeding status with `GET /seed/status`
+### Launch Environment
 
-2. **Explore Entities**:
-   - Use `GET /persons`, `GET /bank-accounts`, and `GET /bank-transactions` endpoints to view the seeded data
+```bash
+docker-compose up --build
+```
 
-3. **Test Banking Processes**:
-   - Use `POST /processes` with process_id=1 to update account balances
-   - Use `POST /processes` with process_id=2 to calculate net worths
-   - Use `POST /processes` with process_id=3 to calculate borrowable amounts
+This command provisions and starts all required services (app, postgres, gremlin). The API will be accessible at `http://localhost:3000`.
 
-4. **Explore Specific Details**:
-   - Get borrowable amount for a specific person with `GET /persons/{id}/borrowable-amount`
-   - View accounts for a person with `GET /bank-accounts?personId={id}`
-   - View transactions for an account with `GET /bank-transactions?iban={iban}`
+---
 
-### Tips for Testing
+## Usage & Workflow
 
-- The Swagger UI allows you to expand/collapse all operations using the buttons at the top
-- You can filter operations by typing in the search box
-- Click the "Schema" link in response descriptions to see detailed response structures
-- Use the "Try it out" button to execute requests directly from the UI
-- Responses include both data and HTTP status codes for validation
+### API Exploration
 
-This testing interface makes it easy to verify all the banking system functionality works correctly.
+All endpoints are documented and executable via the Swagger UI at **[http://localhost:3000/api](http://localhost:3000/api)**.
+
+### Standard Workflow
+
+1.  **Seed Data**: Send a `POST` request to `/seed` to populate the databases with a consistent set of mock data.
+2.  **Run Processes**: Send a `POST` request to `/processes` with a `processId` (1, 2, or 3) to trigger the corresponding financial calculations.
+
+---
+
+## Testing
+
+Execute the full suite of unit and integration tests:
+
+```bash
+yarn test
+```
+
+---
+
+## Key Design Decision
+
+- **Loan Potential Metric**: The term "Kontostand" (account balance) from the requirements was interpreted as **Net Worth**. A person's total wealth is a more stable and realistic indicator of their financial standing than a single account's balance, leading to a more meaningful implementation of the loan potential calculation.
