@@ -105,7 +105,7 @@ export class GremlinService implements OnModuleInit, OnModuleDestroy {
     }
 
     // Query execution
-    private async executeQuery<T = any>(query: string, bindings: Record<string, any> = {}): Promise<T[]> {
+    public async executeQuery<T = any>(query: string, bindings: Record<string, any> = {}): Promise<T[]> {
         if (!this.client) {
             this.logger.error('Gremlin client is not connected.');
             throw new Error('Gremlin client not available');
