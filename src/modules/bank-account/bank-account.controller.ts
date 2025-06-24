@@ -29,8 +29,7 @@ import {
 @ApiTags('bank-accounts')
 @Controller('bank-accounts')
 export class BankAccountController {
-    constructor(private readonly service: BankAccountService) {
-    }
+    constructor(private readonly service: BankAccountService) {}
 
     @Post()
     @ApiOperation({summary: 'Create a new bank account'})
@@ -39,14 +38,14 @@ export class BankAccountController {
     @ApiNotFoundResponse('Person not found')
     @ApiConflictResponse('Bank account with this IBAN already exists')
     async create(
-        @Body() dto: CreateBankAccountDto,
+        @Body() dto: CreateBankAccountDto
     ): Promise<BankAccountResponseDto> {
         const account = await this.service.create(dto);
         return new BankAccountResponseDto(account);
     }
 
     @Get()
-    @ApiOperation({summary: 'Get all bank accounts or filter by person ID'})
+    @ApiOperation({summary: 'Get all bank accounts or filter by person'})
     @ApiOkResponse(BankAccountResponseDto, 'List of bank accounts', true)
     @ApiQuery({
         name: 'personId',
@@ -57,13 +56,12 @@ export class BankAccountController {
     @ApiBadRequestResponse('Invalid UUID format for personId')
     async findAll(
         @Query('personId', new ParseUUIDPipe({version: '4', optional: true}))
-        personId?: string,
+        personId?: string
     ): Promise<BankAccountResponseDto[]> {
-        const accounts =
-            personId
-                ? await this.service.findByPersonId(personId)
-                : await this.service.findAll();
-        return accounts.map((account) => new BankAccountResponseDto(account));
+        const accounts = personId
+            ? await this.service.findByPersonId(personId)
+            : await this.service.findAll();
+        return accounts.map(account => new BankAccountResponseDto(account));
     }
 
     @Get(':iban')

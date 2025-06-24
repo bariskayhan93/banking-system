@@ -1,29 +1,25 @@
-import { ApiProperty } from '@nestjs/swagger';
-import { PersonResponseDto } from '../../person/dto/person-response.dto';
-import { BankAccount } from '../entities/bank-account.entity';
+import {ApiProperty} from '@nestjs/swagger';
+import {PersonResponseDto} from '../../person/dto/person-response.dto';
+import {BankAccount} from '../entities/bank-account.entity';
 
 export class BankAccountResponseDto {
     @ApiProperty({
-        description: 'The IBAN of the bank account',
-        example: 'DE89370400440532013000',
+        example: 'DE89370400440532013000'
     })
     iban: string;
 
     @ApiProperty({
-        description: 'The name of the bank',
-        example: 'N26',
+        example: 'N26'
     })
     bankName: string;
 
     @ApiProperty({
-        description: 'The current balance of the account',
-        example: 1500.50,
+        example: 1500.50
     })
     balance: number;
 
     @ApiProperty({
-        description: 'The owner of the bank account',
-        type: () => PersonResponseDto,
+        type: () => PersonResponseDto
     })
     person: PersonResponseDto;
 
@@ -36,4 +32,3 @@ export class BankAccountResponseDto {
         }
     }
 }
-

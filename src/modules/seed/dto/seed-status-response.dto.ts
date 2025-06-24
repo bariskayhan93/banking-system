@@ -1,10 +1,8 @@
-import { ApiProperty } from '@nestjs/swagger';
+import {ApiProperty} from '@nestjs/swagger';
 
 export class SeedStatusResponseDto {
-  @ApiProperty({
-    description: 'Whether the database has been seeded',
-    example: true,
-  })
-  seeded: boolean;
+    @ApiProperty({
+        example: true
+    })
+    seeded: boolean;
 }
-

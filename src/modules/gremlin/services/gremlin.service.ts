@@ -8,8 +8,7 @@ export class GremlinService implements OnModuleInit, OnModuleDestroy {
     private client: gremlin.driver.Client;
     private readonly logger = new Logger(GremlinService.name);
 
-    constructor(private configService: ConfigService) {
-    }
+    constructor(private readonly configService: ConfigService) {}
 
     async onModuleInit(): Promise<void> {
         const host = this.configService.get<string>('GREMLIN_HOST');
@@ -32,27 +31,14 @@ export class GremlinService implements OnModuleInit, OnModuleDestroy {
         }
     }
 
-    async onModuleDestroy() {
+    async onModuleDestroy(): Promise<void> {
         if (this.client) {
             await this.client.close();
             this.logger.log('Disconnected from Gremlin server');
         }
     }
 
-    async executeQuery<T = any>(query: string, bindings: Record<string, any> = {}): Promise<T[]> {
-        if (!this.client) {
-            this.logger.error('Gremlin client is not connected.');
-            throw new Error('Gremlin client not available');
-        }
-        try {
-            const result = await this.client.submit(query, bindings);
-            return result._items;
-        } catch (error) {
-            this.logger.error(`Query failed: ${error.message}`, `Query: ${query}`);
-            throw error;
-        }
-    }
-
+    // Person operations
     async addPersonVertex(id: string, name: string, email: string): Promise<void> {
         const query = "g.addV(personLabel).property('id', personId).property('name', personName).property('email', personEmail)";
         await this.executeQuery(query, {
@@ -86,6 +72,7 @@ export class GremlinService implements OnModuleInit, OnModuleDestroy {
         await this.executeQuery(query, {personId});
     }
 
+    // Friendship operations
     async friendshipExists(personId: string, friendId: string): Promise<boolean> {
         const query = "g.V().has('person', 'id', personId).out('has_friend').has('id', friendId).count()";
         const result = await this.executeQuery<number>(query, {personId, friendId});
@@ -111,8 +98,24 @@ export class GremlinService implements OnModuleInit, OnModuleDestroy {
         return this.executeQuery<string>(query, {personId});
     }
 
+    // Database maintenance
     async clearGraph(): Promise<void> {
         this.logger.warn('Clearing all data from the graph database');
         await this.executeQuery('g.V().drop()');
+    }
+
+    // Query execution
+    private async executeQuery<T = any>(query: string, bindings: Record<string, any> = {}): Promise<T[]> {
+        if (!this.client) {
+            this.logger.error('Gremlin client is not connected.');
+            throw new Error('Gremlin client not available');
+        }
+        try {
+            const result = await this.client.submit(query, bindings);
+            return result._items;
+        } catch (error) {
+            this.logger.error(`Query failed: ${error.message}`, `Query: ${query}`);
+            throw error;
+        }
     }
 }

@@ -1,10 +1,10 @@
-import { Injectable, Logger, NotFoundException } from '@nestjs/common';
-import { InjectRepository } from '@nestjs/typeorm';
-import { In, Repository } from 'typeorm';
-import { Person } from '../entities/person.entity';
-import { CreatePersonDto } from '../dto/create-person.dto';
-import { v4 as uuidv4 } from 'uuid';
-import { UpdatePersonDto } from '../dto/update-person.dto';
+import {Injectable, Logger, NotFoundException} from '@nestjs/common';
+import {InjectRepository} from '@nestjs/typeorm';
+import {In, Repository} from 'typeorm';
+import {Person} from '../entities/person.entity';
+import {CreatePersonDto} from '../dto/create-person.dto';
+import {UpdatePersonDto} from '../dto/update-person.dto';
+import {v4 as uuidv4} from 'uuid';
 
 @Injectable()
 export class PersonRepository {
@@ -12,50 +12,54 @@ export class PersonRepository {
 
     constructor(
         @InjectRepository(Person)
-        private readonly personRepo: Repository<Person>,
+        private readonly typeormRepo: Repository<Person>,
     ) {}
 
-    async create(createPersonDto: CreatePersonDto): Promise<Person> {
-        const person = this.personRepo.create({
+    async create(dto: CreatePersonDto): Promise<Person> {
+        this.logger.log(`Creating person: ${dto.email}`);
+
+        const person = this.typeormRepo.create({
             id: uuidv4(),
-            ...createPersonDto,
+            ...dto,
         });
-        return this.personRepo.save(person);
+        return this.typeormRepo.save(person);
     }
 
     async findAll(): Promise<Person[]> {
-        return this.personRepo.find();
+        return this.typeormRepo.find();
     }
 
     async findById(id: string, relations: string[] = []): Promise<Person> {
-        const person = await this.personRepo.findOne({ where: { id }, relations });
+        const person = await this.typeormRepo.findOne({
+            where: {id},
+            relations
+        });
+
         if (!person) {
-            this.logger.warn(`Person with ID ${id} not found`);
-            throw new NotFoundException(`Person with ID ${id} not found`);
+            throw new NotFoundException(`Person ${id} not found`);
         }
+
         return person;
     }
 
     async findByIds(ids: string[]): Promise<Person[]> {
-        if (!ids || ids.length === 0) {
-            return [];
-        }
-        return this.personRepo.findBy({ id: In(ids) });
+        if (!ids || ids.length === 0) return [];
+        return this.typeormRepo.findBy({id: In(ids)});
     }
 
     async findByEmail(email: string): Promise<Person | null> {
-        return this.personRepo.findOne({ where: { email } });
+        return this.typeormRepo.findOne({where: {email}});
     }
 
-    async update(id: string, updatePersonDto: UpdatePersonDto): Promise<Person> {
-        await this.personRepo.update(id, updatePersonDto);
+    async update(id: string, dto: UpdatePersonDto): Promise<Person> {
+        await this.typeormRepo.update(id, dto);
         return this.findById(id);
     }
 
     async remove(id: string): Promise<void> {
-        const result = await this.personRepo.delete(id);
+        const result = await this.typeormRepo.delete(id);
         if (result.affected === 0) {
-            throw new NotFoundException(`Person with ID ${id} not found`);
+            throw new NotFoundException(`Person ${id} not found`);
         }
     }
 }
