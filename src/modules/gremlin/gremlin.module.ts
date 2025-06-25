@@ -1,5 +1,5 @@
-import { Module, Global } from '@nestjs/common';
-import { ConfigModule } from '@nestjs/config';
+import {Module, Global} from '@nestjs/common';
+import {ConfigModule} from '@nestjs/config';
 import {GremlinService} from "./services/gremlin.service";
 
 @Global()
