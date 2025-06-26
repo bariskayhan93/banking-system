@@ -1,38 +1,34 @@
-import {Injectable, Logger, NotFoundException} from '@nestjs/common';
-import {CreateBankTransactionDto} from './dto/create-bank-transaction.dto';
-import {BankTransaction} from './entities/bank-transaction.entity';
-import {BankTransactionRepository} from './repositories/bank-transaction.repository';
-import {BankAccountRepository} from '../bank-account/repositories/bank-account.repository';
+import { Injectable, Logger, NotFoundException } from '@nestjs/common';
+import { CreateBankTransactionDto } from './dto/create-bank-transaction.dto';
+import { BankTransaction } from './entities/bank-transaction.entity';
+import { BankTransactionRepository } from './repositories/bank-transaction.repository';
+import { BankAccountRepository } from '../bank-account/repositories/bank-account.repository';
 
 @Injectable()
 export class BankTransactionService {
-    private readonly logger = new Logger(BankTransactionService.name);
+  private readonly logger = new Logger(BankTransactionService.name);
 
-    constructor(
-        private readonly repository: BankTransactionRepository,
-        private readonly bankAccountRepository: BankAccountRepository,
-    ) {}
+  constructor(
+    private readonly repository: BankTransactionRepository,
+    private readonly bankAccountRepository: BankAccountRepository,
+  ) {}
 
-    async create(dto: CreateBankTransactionDto): Promise<BankTransaction> {
-        this.logger.log(`Creating transaction for account: ${dto.iban}`);
+  async create(dto: CreateBankTransactionDto): Promise<BankTransaction> {
+    this.logger.log(`Creating transaction for account: ${dto.iban}`);
 
-        const bankAccount = await this.bankAccountRepository.findByIban(dto.iban);
-        if (!bankAccount) {
-            throw new NotFoundException(`Bank account with IBAN ${dto.iban} not found.`);
-        }
-
-        return this.repository.create(dto, bankAccount);
+    const bankAccount = await this.bankAccountRepository.findByIban(dto.iban);
+    if (!bankAccount) {
+      throw new NotFoundException(`Bank account with IBAN ${dto.iban} not found.`);
     }
 
-    async findAll(): Promise<BankTransaction[]> {
-        return this.repository.findAll();
-    }
+    return this.repository.create(dto, bankAccount);
+  }
 
-    async findByIban(iban: string): Promise<BankTransaction[]> {
-        const bankAccount = await this.bankAccountRepository.findByIban(iban);
-        if (!bankAccount) {
-            throw new NotFoundException(`Bank account with IBAN ${iban} not found.`);
-        }
-        return this.repository.findByIban(iban);
-    }
+  async findAll(): Promise<BankTransaction[]> {
+    return this.repository.findAll();
+  }
+
+  async findByIban(iban: string): Promise<BankTransaction[]> {
+    return this.repository.findByIban(iban);
+  }
 }

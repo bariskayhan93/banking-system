@@ -71,14 +71,8 @@ describe('BankTransactionService', () => {
   describe('findByIban', () => {
     it('should return transactions for a given iban', async () => {
       const result = await service.findByIban('iban-1');
-      expect(accountRepository.findByIban).toHaveBeenCalledWith('iban-1');
       expect(transactionRepository.findByIban).toHaveBeenCalledWith('iban-1');
       expect(result).toEqual([mockTransaction]);
-    });
-
-    it('should throw NotFoundException if account does not exist', async () => {
-      (accountRepository.findByIban as jest.Mock).mockResolvedValue(null);
-      await expect(service.findByIban('non-existent-iban')).rejects.toThrow(NotFoundException);
     });
   });
 });
