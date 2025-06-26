@@ -1,7 +1,6 @@
-import { IsString, IsNumber, IsNotEmpty, IsOptional } from 'class-validator';
+import { IsString, IsNumber, IsNotEmpty, IsOptional, Length, Matches } from 'class-validator';
 import { ApiProperty } from '@nestjs/swagger';
 import { Type } from 'class-transformer';
-import { IsValidIban } from '../../../common/validators/iban.validator';
 
 export class CreateBankTransactionDto {
   @ApiProperty({
@@ -10,7 +9,8 @@ export class CreateBankTransactionDto {
   })
   @IsString()
   @IsNotEmpty()
-  @IsValidIban()
+  @Length(15, 34, { message: 'IBAN must be between 15 and 34 characters' })
+  @Matches(/^[A-Z]{2}[0-9]{2}[A-Z0-9]+$/, { message: 'IBAN must start with 2 letters, 2 digits, followed by alphanumeric characters' })
   iban: string;
 
   @ApiProperty({
@@ -20,7 +20,8 @@ export class CreateBankTransactionDto {
   })
   @IsOptional()
   @IsString()
-  @IsValidIban()
+  @Length(15, 34, { message: 'IBAN must be between 15 and 34 characters' })
+  @Matches(/^[A-Z]{2}[0-9]{2}[A-Z0-9]+$/, { message: 'IBAN must start with 2 letters, 2 digits, followed by alphanumeric characters' })
   otherIban?: string;
 
   @ApiProperty({
