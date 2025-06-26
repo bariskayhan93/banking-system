@@ -1,18 +1,23 @@
-import {Test, TestingModule} from '@nestjs/testing';
-import {ConflictException, NotFoundException} from '@nestjs/common';
-import {PersonController} from './person.controller';
-import {PersonService} from './person.service';
-import {CreatePersonDto} from './dto/create-person.dto';
-import {UpdatePersonDto} from './dto/update-person.dto';
-import {CreateFriendshipDto} from './dto/create-friendship.dto';
-
+import { Test, TestingModule } from '@nestjs/testing';
+import { ConflictException, NotFoundException } from '@nestjs/common';
+import { PersonController } from './person.controller';
+import { PersonService } from './person.service';
+import { CreatePersonDto } from './dto/create-person.dto';
+import { UpdatePersonDto } from './dto/update-person.dto';
+import { CreateFriendshipDto } from './dto/create-friendship.dto';
 
 describe('PersonController', () => {
   let controller: PersonController;
   let service: Partial<PersonService>;
 
-  const mockPerson = { id: 'id', name: 'name', email: 'email', createdAt: new Date(), updatedAt: new Date() } as any;
-  const mockFriend = { ...mockPerson, id: 'friend-id' } as any;
+  const mockPerson = {
+    id: 'id',
+    name: 'name',
+    email: 'email',
+    createdAt: new Date(),
+    updatedAt: new Date(),
+  } as any;
+  const mockFriend = { ...mockPerson, id: 'friend-id' };
   const mockService = {
     create: jest.fn(),
     findAll: jest.fn(),

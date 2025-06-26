@@ -7,4 +7,3 @@ export class SeedResponseDto {
   })
   message: string;
 }
-

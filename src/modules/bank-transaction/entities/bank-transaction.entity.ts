@@ -1,52 +1,64 @@
 import {
-    Entity, PrimaryGeneratedColumn, Column, ManyToOne, JoinColumn, CreateDateColumn, UpdateDateColumn,
+  Entity,
+  PrimaryGeneratedColumn,
+  Column,
+  ManyToOne,
+  JoinColumn,
+  CreateDateColumn,
+  UpdateDateColumn,
+  Index,
 } from 'typeorm';
 import { ApiProperty } from '@nestjs/swagger';
-import { BankAccount } from "../../bank-account/entities/bank-account.entity";
+import { BankAccount } from '../../bank-account/entities/bank-account.entity';
 
 /**
  * Bank transaction entity representing financial transfers in the system
  */
 @Entity('bank_transactions')
+@Index(['processed'])
+@Index(['amount'])
+@Index(['createdAt'])
+@Index(['bankAccount', 'processed'])
+@Index(['processed', 'createdAt'])
 export class BankTransaction {
-    @ApiProperty({
-        example: '123e4567-e89b-12d3-a456-426614174000'
-    })
-    @PrimaryGeneratedColumn('uuid')
-    id: string;
+  @ApiProperty({
+    example: '123e4567-e89b-12d3-a456-426614174000',
+  })
+  @PrimaryGeneratedColumn('uuid')
+  id: string;
 
-    @ApiProperty({
-        example: 120.50
-    })
-    @Column('numeric', { precision: 15, scale: 2 })
-    amount: number;
+  @ApiProperty({
+    example: 120.5,
+  })
+  @Column('numeric', { precision: 15, scale: 2 })
+  amount: number;
 
-    @ApiProperty({
-        example: 'FR7630006000011234567890189'
-    })
-    @Column({ nullable: true })
-    otherIban?: string;
+  @ApiProperty({
+    example: 'FR7630006000011234567890189',
+  })
+  @Column({ nullable: true })
+  otherIban?: string;
 
-    @ApiProperty({
-        example: 'Monthly salary payment'
-    })
-    @Column({ nullable: true })
-    description?: string;
+  @ApiProperty({
+    example: 'Monthly salary payment',
+  })
+  @Column({ nullable: true })
+  description?: string;
 
-    @ApiProperty({
-        example: false
-    })
-    @Column({ default: false })
-    processed: boolean;
+  @ApiProperty({
+    example: false,
+  })
+  @Column({ default: false })
+  processed: boolean;
 
-    @ApiProperty({ type: () => BankAccount })
-    @ManyToOne(() => BankAccount, (account) => account.transactions, { onDelete: 'CASCADE' })
-    @JoinColumn({ name: 'iban' })
-    bankAccount: BankAccount;
+  @ApiProperty({ type: () => BankAccount })
+  @ManyToOne(() => BankAccount, account => account.transactions, { onDelete: 'CASCADE' })
+  @JoinColumn({ name: 'iban' })
+  bankAccount: BankAccount;
 
-    @CreateDateColumn({ type: 'timestamptz' })
-    createdAt: Date;
+  @CreateDateColumn({ type: 'timestamptz' })
+  createdAt: Date;
 
-    @UpdateDateColumn({ type: 'timestamptz' })
-    updatedAt: Date;
+  @UpdateDateColumn({ type: 'timestamptz' })
+  updatedAt: Date;
 }

@@ -7,12 +7,9 @@ import { BankAccountRepository } from './repositories/bank-account.repository';
 import { PersonModule } from '../person/person.module';
 
 @Module({
-  imports: [
-    TypeOrmModule.forFeature([BankAccount]),
-    PersonModule
-  ],
+  imports: [TypeOrmModule.forFeature([BankAccount]), PersonModule],
   controllers: [BankAccountController],
   providers: [BankAccountService, BankAccountRepository],
-  exports: [BankAccountService, BankAccountRepository]
+  exports: [BankAccountService, BankAccountRepository],
 })
 export class BankAccountModule {}

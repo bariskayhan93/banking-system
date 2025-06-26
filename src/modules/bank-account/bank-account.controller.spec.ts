@@ -1,13 +1,20 @@
-import {Test, TestingModule} from '@nestjs/testing';
-import {ConflictException, NotFoundException} from '@nestjs/common';
-import {BankAccountController} from './bank-account.controller';
-import {BankAccountService} from './bank-account.service';
+import { Test, TestingModule } from '@nestjs/testing';
+import { ConflictException, NotFoundException } from '@nestjs/common';
+import { BankAccountController } from './bank-account.controller';
+import { BankAccountService } from './bank-account.service';
 
 describe('BankAccountController', () => {
   let controller: BankAccountController;
   let service: Partial<BankAccountService>;
 
-  const mockAccount = { iban: 'iban', bankName: 'Test', balance: 100, createdAt: new Date(), updatedAt: new Date(), person: { id: 'pid' } } as any;
+  const mockAccount = {
+    iban: 'iban',
+    bankName: 'Test',
+    balance: 100,
+    createdAt: new Date(),
+    updatedAt: new Date(),
+    person: { id: 'pid' },
+  } as any;
   const mockService = {
     create: jest.fn(),
     findAll: jest.fn(),

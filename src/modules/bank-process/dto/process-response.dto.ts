@@ -1,8 +1,8 @@
-import {ApiProperty} from '@nestjs/swagger';
+import { ApiProperty } from '@nestjs/swagger';
 
 export class ProcessResponseDto {
-    @ApiProperty({
-        example: 'Processes up to 3 completed successfully.',
-    })
-    message: string;
+  @ApiProperty({
+    example: 'Processes up to 3 completed successfully.',
+  })
+  message: string;
 }
