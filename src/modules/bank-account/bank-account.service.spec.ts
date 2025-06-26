@@ -99,21 +99,19 @@ describe('BankAccountService', () => {
     });
 
     it('should throw NotFoundException if person not found', async () => {
-        (personRepository.findById as jest.Mock).mockRejectedValue(new NotFoundException());
-        await expect(service.findByPersonId('person-id')).rejects.toThrow(NotFoundException);
+      (personRepository.findById as jest.Mock).mockRejectedValue(new NotFoundException());
+      await expect(service.findByPersonId('person-id')).rejects.toThrow(NotFoundException);
     });
   });
 
   describe('remove', () => {
     it('should remove a bank account', async () => {
-      (repository.findByIban as jest.Mock).mockResolvedValue(mockAccount);
       await service.remove('iban');
-      expect(repository.findByIban).toHaveBeenCalledWith('iban');
       expect(repository.remove).toHaveBeenCalledWith('iban');
     });
 
     it('should throw NotFoundException if account to remove is not found', async () => {
-      (repository.findByIban as jest.Mock).mockResolvedValue(null);
+      (repository.remove as jest.Mock).mockRejectedValue(new NotFoundException('Account iban not found'));
       await expect(service.remove('iban')).rejects.toThrow(NotFoundException);
     });
   });
