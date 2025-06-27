@@ -1,12 +1,14 @@
-import { Module } from '@nestjs/common';
-import { ConfigModule, ConfigService } from '@nestjs/config';
-import { TypeOrmModule } from '@nestjs/typeorm';
-import { GremlinModule } from './modules/gremlin/gremlin.module';
-import { PersonModule } from './modules/person/person.module';
-import { BankAccountModule } from './modules/bank-account/bank-account.module';
-import { BankTransactionModule } from './modules/bank-transaction/bank-transaction.module';
-import { BankProcessModule } from './modules/bank-process/bank-process.module';
-import { SeedModule } from './modules/seed/seed.module';
+import {Module} from '@nestjs/common';
+import {ConfigModule, ConfigService} from '@nestjs/config';
+import {TypeOrmModule} from '@nestjs/typeorm';
+import {GremlinModule} from './modules/gremlin/gremlin.module';
+import {PersonModule} from './modules/person/person.module';
+import {BankAccountModule} from './modules/bank-account/bank-account.module';
+import {BankTransactionModule} from './modules/bank-transaction/bank-transaction.module';
+import {BankProcessModule} from './modules/bank-process/bank-process.module';
+import {SeedModule} from './modules/seed/seed.module';
+import {AuthModule} from './common/auth/auth.module';
+import {AdminModule} from './modules/admin/admin.module';
 
 @Module({
   imports: [
@@ -33,6 +35,8 @@ import { SeedModule } from './modules/seed/seed.module';
     BankTransactionModule,
     BankProcessModule,
     SeedModule,
+    AuthModule,
+    AdminModule,
   ],
 })
 export class AppModule {}

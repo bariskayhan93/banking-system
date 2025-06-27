@@ -17,7 +17,17 @@ async function bootstrap() {
       transformOptions: { enableImplicitConversion: true },
     }),
   );
-  app.enableCors();
+  app.enableCors({
+    origin: [
+      'http://localhost:4200',
+      'http://localhost:4201',
+      'https://banking-client-preview.bariskayhan.com',
+      'https://banking-admin-preview.bariskayhan.com',
+    ],
+    credentials: true,
+    methods: ['GET', 'POST', 'PUT', 'DELETE', 'PATCH', 'OPTIONS'],
+    allowedHeaders: ['Content-Type', 'Authorization'],
+  });
 
   const config = new DocumentBuilder()
     .setTitle('Banking System API')
