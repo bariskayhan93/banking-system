@@ -10,6 +10,7 @@ describe('LoanCalculatorService', () => {
     name,
     netWorth,
     email: `${name.toLowerCase()}@test.com`,
+    auth0UserId: `auth0|${id}`,
     bankAccounts: [],
     createdAt: new Date(),
     updatedAt: new Date(),

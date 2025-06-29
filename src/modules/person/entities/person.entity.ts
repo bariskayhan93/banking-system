@@ -16,6 +16,7 @@ import { BankAccount } from '../../bank-account/entities/bank-account.entity';
 @Entity('persons')
 @Index(['email'])
 @Index(['netWorth'])
+@Index(['auth0UserId'])
 export class Person {
   @ApiProperty({
     example: '1f8e7a3c-9d4b-5c6a-8b2f-1e9d7f3a2c5b',
@@ -40,6 +41,13 @@ export class Person {
   })
   @Column('decimal', { precision: 15, scale: 2, default: 0 })
   netWorth: number;
+
+  @ApiProperty({
+    example: 'google-oauth2|103103757533916682021',
+    required: false,
+  })
+  @Column({ length: 255, nullable: true, unique: true })
+  auth0UserId: string;
 
   @ApiProperty({ type: () => [BankAccount] })
   @OneToMany(() => BankAccount, account => account.person)

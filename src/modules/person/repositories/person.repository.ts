@@ -62,4 +62,8 @@ export class PersonRepository {
       throw new NotFoundException(`Person ${id} not found`);
     }
   }
+
+  async findByAuth0UserId(auth0UserId: string): Promise<Person | null> {
+    return this.typeormRepo.findOne({ where: { auth0UserId } });
+  }
 }

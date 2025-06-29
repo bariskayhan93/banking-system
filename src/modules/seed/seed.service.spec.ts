@@ -111,6 +111,7 @@ describe('SeedService', () => {
         id: '1',
         name: 'John Doe',
         email: 'john@test.com',
+        auth0UserId: 'auth0|123456789',
         netWorth: 0,
         bankAccounts: [],
         createdAt: new Date(),

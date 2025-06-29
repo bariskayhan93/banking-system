@@ -9,7 +9,7 @@ export class CreateBankAccountDto {
   @IsString()
   @IsNotEmpty()
   @Length(15, 34, { message: 'IBAN must be between 15 and 34 characters' })
-  @Matches(/^[A-Z]{2}[0-9]{2}[A-Z0-9]+$/, { message: 'IBAN must start with 2 letters, 2 digits, followed by alphanumeric characters' })
+  @Matches(/^[A-Z]{2}[0-9]{2}[A-Z0-9]+$/, {message: 'IBAN must start with 2 letters, 2 digits, followed by alphanumeric characters'})
   iban: string;
 
   @ApiProperty({

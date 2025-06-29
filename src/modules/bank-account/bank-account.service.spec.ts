@@ -111,7 +111,9 @@ describe('BankAccountService', () => {
     });
 
     it('should throw NotFoundException if account to remove is not found', async () => {
-      (repository.remove as jest.Mock).mockRejectedValue(new NotFoundException('Account iban not found'));
+      (repository.remove as jest.Mock).mockRejectedValue(
+        new NotFoundException('Account iban not found'),
+      );
       await expect(service.remove('iban')).rejects.toThrow(NotFoundException);
     });
   });

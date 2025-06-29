@@ -103,4 +103,39 @@ export class PersonService {
     }
     return this.repository.findByIds(friendIds);
   }
+
+  async findByAuth0UserId(auth0UserId: string): Promise<Person | null> {
+    return this.repository.findByAuth0UserId(auth0UserId);
+  }
+
+  async linkAuth0User(personId: string, auth0UserId: string): Promise<Person> {
+    const person = await this.repository.findById(personId);
+    return this.repository.update(personId, { auth0UserId });
+  }
+
+  async createFromAuth0(data: { name: string; email: string; auth0UserId: string }): Promise<Person> {
+    this.logger.log(`Auto-creating person from Auth0: ${data.email}`);
+
+    // Atomic check for existing person by email or auth0UserId
+    const existingByEmail = await this.repository.findByEmail(data.email);
+    if (existingByEmail) {
+      // Link existing person instead of creating duplicate
+      return this.linkAuth0User(existingByEmail.id, data.auth0UserId);
+    }
+
+    const existingByAuth0 = await this.repository.findByAuth0UserId(data.auth0UserId);
+    if (existingByAuth0) {
+      return existingByAuth0;
+    }
+
+    // Create new person with Auth0 link
+    const person = await this.repository.create({
+      name: data.name,
+      email: data.email,
+      auth0UserId: data.auth0UserId
+    });
+
+    await this.gremlinService.addPersonVertex(person.id, person.name, person.email);
+    return person;
+  }
 }

@@ -54,6 +54,8 @@
     "@types/gremlin": "^3.6.7",
     "@types/jest": "29",
     "@types/node": "^22.10.7",
+    "@types/passport": "^1.0.17",
+    "@types/passport-jwt": "^4.0.1",
     "@types/pg": "^8.15.4",
     "@types/supertest": "^6.0.3",
     "eslint": "^9.18.0",

@@ -16,6 +16,7 @@ describe('PersonService', () => {
     id: '123e4567-e89b-12d3-a456-426614174000',
     name: 'Test Person',
     email: 'test@example.com',
+    auth0UserId: 'auth0|1234567890',
     netWorth: 1000,
     bankAccounts: [],
     createdAt: new Date(),

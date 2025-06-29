@@ -1,5 +1,5 @@
 import { ApiProperty } from '@nestjs/swagger';
-import { IsEmail, IsNotEmpty, IsString, MaxLength } from 'class-validator';
+import { IsEmail, IsNotEmpty, IsString, MaxLength, IsOptional } from 'class-validator';
 
 export class CreatePersonDto {
   @ApiProperty({
@@ -20,4 +20,14 @@ export class CreatePersonDto {
   @IsEmail()
   @MaxLength(255)
   email: string;
+
+  @ApiProperty({
+    example: 'google-oauth2|103103757533916682021',
+    required: false,
+    maxLength: 255,
+  })
+  @IsString()
+  @IsOptional()
+  @MaxLength(255)
+  auth0UserId?: string;
 }
