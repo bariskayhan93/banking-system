@@ -26,8 +26,9 @@ jobs:
           export DB_PASSWORD="${{ secrets.DB_PASSWORD }}"
           export DB_DATABASE="${{ secrets.DB_DATABASE }}"
           docker compose -f docker-compose.dev.yml down || true
+          docker system prune -f || true
           docker compose -f docker-compose.dev.yml build --no-cache
-          docker compose -f docker-compose.dev.yml up -d
+          docker compose -f docker-compose.dev.yml up -d --force-recreate
           
           # Wait for health check
           echo "Waiting for application to start..."
