@@ -27,12 +27,8 @@ jobs:
           export DB_USERNAME="${{ secrets.DB_USERNAME }}"
           export DB_PASSWORD="${{ secrets.DB_PASSWORD }}"
           export DB_DATABASE="${{ secrets.DB_DATABASE }}"
-          
-          # Verify environment variables are set (without exposing sensitive data)
-          echo "Environment variables check:"
-          echo "DB_USERNAME: ${DB_USERNAME:-NOT_SET}"
-          echo "DB_PASSWORD: ${DB_PASSWORD:+SET}${DB_PASSWORD:-NOT_SET}"
-          echo "DB_DATABASE: ${DB_DATABASE:-NOT_SET}"
+          export AUTH0_DOMAIN="${{ secrets.AUTH0_DOMAIN }}"
+          export AUTH0_AUDIENCE="${{ secrets.AUTH0_AUDIENCE }}"
           
           docker compose -f docker-compose.dev.yml down || true
           docker system prune -f || true
