@@ -332,6 +332,18 @@ export class GremlinService implements OnModuleInit, OnModuleDestroy {
     };
   }
 
+  // Health check
+  async testConnection(): Promise<void> {
+    if (!this.client) {
+      throw new Error('Gremlin client not available');
+    }
+    try {
+      await this.client.submit('g.V().limit(1).count()');
+    } catch (error) {
+      throw new Error(`Gremlin connection test failed: ${error.message}`);
+    }
+  }
+
   // Query execution
   public async executeQuery<T = any>(
     query: string,

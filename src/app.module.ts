@@ -10,6 +10,7 @@ import { SeedModule } from './modules/seed/seed.module';
 import { AuthModule } from './common/auth/auth.module';
 import { AdminModule } from './modules/admin/admin.module';
 import { MyBankingModule } from './modules/my-banking/my-banking.module';
+import { HealthModule } from './modules/health/health.module';
 
 @Module({
   imports: [
@@ -39,6 +40,7 @@ import { MyBankingModule } from './modules/my-banking/my-banking.module';
     AuthModule,
     AdminModule,
     MyBankingModule,
+    HealthModule,
   ],
 })
 export class AppModule {}
