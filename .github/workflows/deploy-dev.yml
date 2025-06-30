@@ -1,0 +1,40 @@
+name: Deploy Banking Dev API
+
+on:
+  push:
+    branches: [dev]
+  workflow_dispatch:
+
+jobs:
+  deploy:
+    runs-on: ubuntu-latest
+    
+    steps:
+    - name: Checkout code
+      uses: actions/checkout@v4
+      
+    - name: Deploy to VPS
+      uses: appleboy/ssh-action@master
+      with:
+        host: ${{ secrets.VPS_HOST }}
+        username: ${{ secrets.VPS_USER }}
+        key: ${{ secrets.VPS_SSH_KEY }}
+        script: |
+          cd /var/www/banking-system
+          git pull origin dev
+          docker compose -f docker-compose.dev.yml down || true
+          docker compose -f docker-compose.dev.yml build --no-cache
+          docker compose -f docker-compose.dev.yml up -d
+          
+          # Wait for health check
+          echo "Waiting for application to start..."
+          sleep 30
+          
+          # Health check
+          if curl -f http://localhost:3001/health; then
+            echo "Deployment successful - Health check passed"
+            docker system prune -f
+          else
+            echo "Deployment failed - Health check failed"
+            exit 1
+          fi

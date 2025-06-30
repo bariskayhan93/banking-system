@@ -1,0 +1,52 @@
+services:
+  app:
+    build:
+      context: .
+      dockerfile: Dockerfile
+    container_name: banking-app-dev
+    ports:
+      - "3001:3000"
+    environment:
+      - NODE_ENV=development
+      - DB_HOST=postgres-dev
+      - DB_PORT=5432
+      - DB_USERNAME=postgres
+      - DB_PASSWORD=postgres_dev_2024
+      - DB_DATABASE=banking_dev
+      - GREMLIN_HOST=gremlin-dev
+      - GREMLIN_PORT=8182
+      - GREMLIN_TRAVERSAL_SOURCE=g
+      - HOST=0.0.0.0
+      - PORT=3000
+    depends_on:
+      - postgres-dev
+      - gremlin-dev
+    restart: unless-stopped
+    healthcheck:
+      test: ["CMD", "curl", "-f", "http://localhost:3000/health"]
+      interval: 30s
+      timeout: 10s
+      retries: 3
+
+  postgres-dev:
+    image: postgres:15-alpine
+    container_name: postgres-dev
+    environment:
+      POSTGRES_USER: postgres
+      POSTGRES_PASSWORD: postgres_dev_2024
+      POSTGRES_DB: banking_dev
+    volumes:
+      - postgres_dev_data:/var/lib/postgresql/data
+    ports:
+      - "5433:5432"
+    restart: unless-stopped
+
+  gremlin-dev:
+    image: tinkerpop/gremlin-server:3.7.3
+    container_name: gremlin-dev
+    ports:
+      - "8183:8182"
+    restart: unless-stopped
+
+volumes:
+  postgres_dev_data:
