@@ -34,18 +34,6 @@ jobs:
           echo "DB_PASSWORD: ${DB_PASSWORD:+SET}${DB_PASSWORD:-NOT_SET}"
           echo "DB_DATABASE: ${DB_DATABASE:-NOT_SET}"
           
-          # Check if all required variables are set
-          if [ -z "$DB_USERNAME" ] || [ -z "$DB_PASSWORD" ] || [ -z "$DB_DATABASE" ]; then
-            echo "❌ ERROR: Required environment variables are not set!"
-            echo "Please check GitHub repository secrets:"
-            echo "  - DB_USERNAME"
-            echo "  - DB_PASSWORD" 
-            echo "  - DB_DATABASE"
-            exit 1
-          fi
-          
-          echo "✅ All environment variables are set"
-          
           docker compose -f docker-compose.dev.yml down || true
           docker system prune -f || true
           docker compose -f docker-compose.dev.yml build --no-cache
