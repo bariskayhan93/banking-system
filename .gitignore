@@ -24,3 +24,5 @@ coverage/
 *.local.json        
 
 .idea/
+scripts/
+nginx
