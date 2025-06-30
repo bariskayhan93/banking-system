@@ -27,7 +27,6 @@ RUN yarn install --frozen-lockfile --production
 
 # Copy compiled code from builder stage
 COPY --from=builder /app/dist ./dist
-COPY --from=builder /app/config ./config
 
 # Define environment variables
 ENV NODE_ENV=production
