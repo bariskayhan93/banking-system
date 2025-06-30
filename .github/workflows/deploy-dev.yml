@@ -34,11 +34,16 @@ jobs:
           echo "Waiting for application to start..."
           sleep 60
           
-          # Health check
+          # Health check - use correct port (3001, not 3000)
+          echo "Running health check..."
           if curl -f http://localhost:3001/health; then
             echo "Deployment successful - Health check passed"
             docker system prune -f
           else
-            echo "Deployment failed - Health check failed"
+            echo "Health check failed"
+            echo "Container status:"
+            docker ps
+            echo "Application logs:"
+            docker compose -f docker-compose.dev.yml logs --tail=20 banking-app-dev
             exit 1
           fi
