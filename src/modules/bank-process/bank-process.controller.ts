@@ -1,5 +1,5 @@
-import { Body, Controller, Get, Param, ParseUUIDPipe, Post } from '@nestjs/common';
-import { ApiOperation, ApiParam, ApiTags } from '@nestjs/swagger';
+import {Body, Controller, Get, Param, ParseUUIDPipe, Post, UseGuards} from '@nestjs/common';
+import {ApiBearerAuth, ApiOperation, ApiParam, ApiTags} from '@nestjs/swagger';
 import { BankProcessService } from './bank-process.service';
 import { LoanPotentialDto } from './dto/loan-potential.dto';
 import { ProcessDto } from './dto/process.dto';
@@ -9,8 +9,11 @@ import {
   ApiNotFoundResponse,
   ApiOkResponse,
 } from '../../common/decorators/api-response.decorator';
+import {JwtAuthGuard} from "../../common/auth/jwt-auth.guard";
 
 @ApiTags('processes')
+@ApiBearerAuth()
+@UseGuards(JwtAuthGuard)
 @Controller('processes')
 export class BankProcessController {
   constructor(private readonly service: BankProcessService) {}

@@ -1,5 +1,5 @@
-import { Controller, Get, Post, Body, Param, Delete, Put, ParseUUIDPipe } from '@nestjs/common';
-import { ApiOperation, ApiParam, ApiTags } from '@nestjs/swagger';
+import {Controller, Get, Post, Body, Param, Delete, Put, ParseUUIDPipe, UseGuards} from '@nestjs/common';
+import {ApiBearerAuth, ApiOperation, ApiParam, ApiTags} from '@nestjs/swagger';
 import { PersonService } from './person.service';
 import { CreatePersonDto } from './dto/create-person.dto';
 import { UpdatePersonDto } from './dto/update-person.dto';
@@ -13,8 +13,11 @@ import {
   ApiNotFoundResponse,
   ApiOkResponse,
 } from '../../common/decorators/api-response.decorator';
+import {JwtAuthGuard} from "../../common/auth/jwt-auth.guard";
 
 @ApiTags('persons')
+@ApiBearerAuth()
+@UseGuards(JwtAuthGuard)
 @Controller('persons')
 export class PersonController {
   constructor(private readonly service: PersonService) {}

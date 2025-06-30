@@ -1,5 +1,5 @@
-import { Controller, Get, Post, Body, Query } from '@nestjs/common';
-import { ApiOperation, ApiQuery, ApiTags } from '@nestjs/swagger';
+import {Controller, Get, Post, Body, Query, UseGuards} from '@nestjs/common';
+import {ApiBearerAuth, ApiOperation, ApiQuery, ApiTags} from '@nestjs/swagger';
 import { BankTransactionService } from './bank-transaction.service';
 import { CreateBankTransactionDto } from './dto/create-bank-transaction.dto';
 import { BankTransactionResponseDto } from './dto/bank-transaction-response.dto';
@@ -9,8 +9,11 @@ import {
   ApiNotFoundResponse,
   ApiOkResponse,
 } from '../../common/decorators/api-response.decorator';
+import {JwtAuthGuard} from "../../common/auth/jwt-auth.guard";
 
 @ApiTags('bank-transactions')
+@ApiBearerAuth()
+@UseGuards(JwtAuthGuard)
 @Controller('bank-transactions')
 export class BankTransactionController {
   constructor(private readonly service: BankTransactionService) {}
