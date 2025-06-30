@@ -11,6 +11,7 @@ import { AuthModule } from './common/auth/auth.module';
 import { AdminModule } from './modules/admin/admin.module';
 import { MyBankingModule } from './modules/my-banking/my-banking.module';
 import { HealthModule } from './modules/health/health.module';
+import {typeOrmConfig} from "./typeorm.config";
 
 @Module({
   imports: [
@@ -20,16 +21,7 @@ import { HealthModule } from './modules/health/health.module';
     TypeOrmModule.forRootAsync({
       imports: [ConfigModule],
       inject: [ConfigService],
-      useFactory: (configService: ConfigService) => ({
-        type: 'postgres',
-        host: configService.get('DB_HOST'),
-        port: configService.get('DB_PORT'),
-        username: configService.get('DB_USERNAME'),
-        password: configService.get('DB_PASSWORD'),
-        database: configService.get('DB_DATABASE'),
-        entities: [__dirname + '/**/*.entity{.ts,.js}'],
-        synchronize: configService.get('NODE_ENV') !== 'production',
-      }),
+      useFactory: (configService: ConfigService) => typeOrmConfig(configService),
     }),
     GremlinModule,
     PersonModule,
