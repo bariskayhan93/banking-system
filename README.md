@@ -77,3 +77,4 @@ yarn test
 ## Key Design Decision
 
 - **Loan Potential Metric**: The term "Kontostand" (account balance) from the requirements was interpreted as **Net Worth**. A person's total wealth is a more stable and realistic indicator of their financial standing than a single account's balance, leading to a more meaningful implementation of the loan potential calculation.
+
