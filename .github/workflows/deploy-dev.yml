@@ -22,6 +22,9 @@ jobs:
         script: |
           cd /var/www/banking-system
           git pull origin dev
+          export DB_USERNAME="${{ secrets.DB_USERNAME }}"
+          export DB_PASSWORD="${{ secrets.DB_PASSWORD }}"
+          export DB_DATABASE="${{ secrets.DB_DATABASE }}"
           docker compose -f docker-compose.dev.yml down || true
           docker compose -f docker-compose.dev.yml build --no-cache
           docker compose -f docker-compose.dev.yml up -d

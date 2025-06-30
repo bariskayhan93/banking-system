@@ -10,9 +10,9 @@ services:
       - NODE_ENV=development
       - DB_HOST=postgres-dev
       - DB_PORT=5432
-      - DB_USERNAME=postgres
-      - DB_PASSWORD=postgres_dev_2024
-      - DB_DATABASE=banking_dev
+      - DB_USERNAME=${DB_USERNAME}
+      - DB_PASSWORD=${DB_PASSWORD}
+      - DB_DATABASE=${DB_DATABASE}
       - GREMLIN_HOST=gremlin-dev
       - GREMLIN_PORT=8182
       - GREMLIN_TRAVERSAL_SOURCE=g
@@ -32,9 +32,9 @@ services:
     image: postgres:15-alpine
     container_name: postgres-dev
     environment:
-      POSTGRES_USER: postgres
-      POSTGRES_PASSWORD: postgres_dev_2024
-      POSTGRES_DB: banking_dev
+      POSTGRES_USER: ${DB_USERNAME}
+      POSTGRES_PASSWORD: ${DB_PASSWORD}
+      POSTGRES_DB: ${DB_DATABASE}
     volumes:
       - postgres_dev_data:/var/lib/postgresql/data
     ports:
