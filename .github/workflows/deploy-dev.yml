@@ -30,10 +30,10 @@ jobs:
           export AUTH0_DOMAIN="${{ secrets.AUTH0_DOMAIN }}"
           export AUTH0_AUDIENCE="${{ secrets.AUTH0_AUDIENCE }}"
           
-          docker compose -f docker-compose.dev.yml down || true
+          docker compose -f docker-compose.dev.yml --env-file .env down || true
           docker system prune -f || true
-          docker compose -f docker-compose.dev.yml build --no-cache
-          docker compose -f docker-compose.dev.yml up -d --force-recreate
+          docker compose -f docker-compose.dev.yml --env-file .env build --no-cache
+          docker compose -f docker-compose.dev.yml --env-file .env up -d --force-recreate
           
           # Wait for health check
           echo "Waiting for application to start..."
